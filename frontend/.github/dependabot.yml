@@ -1,0 +1,64 @@
+version: 2
+updates:
+  # Frontend dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "claudia-ai"
+    assignees:
+      - "claudia-ai"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "frontend"
+    # Security updates
+    security-updates: "enabled"
+    # Auto-merge minor and patch updates
+    auto-merge: true
+    milestone: 1
+    
+  # Server app dependencies  
+  - package-ecosystem: "npm"
+    directory: "/frontend/apps/server"
+    schedule:
+      interval: "weekly"
+    security-updates: "enabled"
+    labels:
+      - "dependencies"
+      - "server"
+      
+  # Web app dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend/apps/web"
+    schedule:
+      interval: "weekly"
+    security-updates: "enabled"
+    labels:
+      - "dependencies"
+      - "web"
+      
+  # UI Kit dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend/packages/ui-kit"
+    schedule:
+      interval: "weekly"
+    security-updates: "enabled"
+    labels:
+      - "dependencies"
+      - "ui-kit"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "dependencies"
+      - "github-actions"

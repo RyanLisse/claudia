@@ -4,10 +4,11 @@
 
 import { EventEmitter } from 'events';
 import type {
-  AgentId,
+  AgentId
+} from '../types/agent.js';
+import {
   AgentStatus,
-  AgentCapability,
-  AgentConfig
+  AgentCapability
 } from '../types/agent.js';
 import type { IAgent, IAgentRegistry } from '../interfaces/IAgent.js';
 import { inngest } from '../inngest/client.js';
@@ -91,7 +92,9 @@ export class AgentRegistry extends EventEmitter implements IAgentRegistry {
     this.removeFromIndexes(agentId, registeredAgent);
     
     // Clean up event listeners
-    registeredAgent.agent.removeAllListeners();
+    if ('removeAllListeners' in registeredAgent.agent) {
+      (registeredAgent.agent as any).removeAllListeners();
+    }
     
     this.agents.delete(agentId);
     this.emit('agent.unregistered', { agentId });
@@ -243,7 +246,7 @@ export class AgentRegistry extends EventEmitter implements IAgentRegistry {
 
     let totalLoad = 0;
 
-    for (const [agentId, registeredAgent] of this.agents) {
+    for (const [, registeredAgent] of this.agents) {
       const status = registeredAgent.agent.getStatus();
       
       // Count by status
@@ -437,14 +440,16 @@ export class AgentRegistry extends EventEmitter implements IAgentRegistry {
 
   private setupAgentEventListeners(agent: IAgent): void {
     // Listen for status changes
-    agent.on('agent.status.changed', (event) => {
-      this.updateAgentStatusIndex(agent.id, event.previousStatus, event.newStatus);
-    });
+    if ('on' in agent) {
+      (agent as any).on('agent.status.changed', (event: any) => {
+        this.updateAgentStatusIndex(agent.id, event.previousStatus, event.newStatus);
+      });
 
-    // Listen for heartbeats
-    agent.on('agent.heartbeat', () => {
-      this.updateHeartbeat(agent.id);
-    });
+      // Listen for heartbeats
+      (agent as any).on('agent.heartbeat', () => {
+        this.updateHeartbeat(agent.id);
+      });
+    }
   }
 
   private updateAgentStatusIndex(agentId: AgentId, oldStatus: AgentStatus, newStatus: AgentStatus): void {

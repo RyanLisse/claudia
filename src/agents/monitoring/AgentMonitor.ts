@@ -62,7 +62,7 @@ export class AgentMonitor extends EventEmitter implements IAgentMonitor {
     super();
     this.systemMetrics = this.initializeSystemMetrics();
     this.setupDefaultAlertRules();
-    this.startMonitoring();
+    this.startSystemMonitoring();
   }
 
   async startMonitoring(agentId: AgentId): Promise<void> {
@@ -421,7 +421,7 @@ export class AgentMonitor extends EventEmitter implements IAgentMonitor {
     }
   }
 
-  private startMonitoring(): void {
+  private startSystemMonitoring(): void {
     // Start periodic system metrics collection
     this.monitoringInterval = setInterval(() => {
       this.collectSystemMetrics();

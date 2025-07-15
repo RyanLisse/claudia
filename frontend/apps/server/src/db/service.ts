@@ -1,301 +1,289 @@
-import { syncManager } from './electric';
-import { syncMonitor } from './sync-monitor';
-import { userRepository, projectRepository, agentRepository, sessionRepository, messageRepository, memoryRepository } from './repositories';
-import { db } from './index';
+import { syncManager } from "./electric";
+import { db } from "./index";
+import {
+	agentRepository,
+	memoryRepository,
+	messageRepository,
+	projectRepository,
+	sessionRepository,
+	userRepository,
+} from "./repositories";
+import { syncMonitor } from "./sync-monitor";
 
 export interface DatabaseServiceConfig {
-  enableSync: boolean;
-  enableMonitoring: boolean;
-  monitoringInterval: number;
-  autoResolveConflicts: boolean;
-  syncBatchSize: number;
-  metricsRetentionDays: number;
+	enableSync: boolean;
+	enableMonitoring: boolean;
+	monitoringInterval: number;
+	autoResolveConflicts: boolean;
+	syncBatchSize: number;
+	metricsRetentionDays: number;
 }
 
 const defaultConfig: DatabaseServiceConfig = {
-  enableSync: true,
-  enableMonitoring: true,
-  monitoringInterval: 5000,
-  autoResolveConflicts: true,
-  syncBatchSize: 100,
-  metricsRetentionDays: 30
+	enableSync: true,
+	enableMonitoring: true,
+	monitoringInterval: 5000,
+	autoResolveConflicts: true,
+	syncBatchSize: 100,
+	metricsRetentionDays: 30,
 };
 
 export class DatabaseService {
-  private config: DatabaseServiceConfig;
-  private isInitialized = false;
+	private config: DatabaseServiceConfig;
+	private isInitialized = false;
 
-  constructor(config: Partial<DatabaseServiceConfig> = {}) {
-    this.config = { ...defaultConfig, ...config };
-  }
+	constructor(config: Partial<DatabaseServiceConfig> = {}) {
+		this.config = { ...defaultConfig, ...config };
+	}
 
-  async initialize(): Promise<void> {
-    if (this.isInitialized) return;
+	async initialize(): Promise<void> {
+		if (this.isInitialized) return;
+		// Initialize sync manager if enabled
+		if (this.config.enableSync) {
+			await syncManager.initialize();
+		}
 
-    console.log('🚀 Initializing Database Service...');
+		// Start monitoring if enabled
+		if (this.config.enableMonitoring) {
+			await syncMonitor.startMonitoring(this.config.monitoringInterval);
+		}
 
-    try {
-      // Initialize sync manager if enabled
-      if (this.config.enableSync) {
-        await syncManager.initialize();
-        console.log('✅ Sync manager initialized');
-      }
+		// Set up cleanup tasks
+		this.setupCleanupTasks();
 
-      // Start monitoring if enabled
-      if (this.config.enableMonitoring) {
-        await syncMonitor.startMonitoring(this.config.monitoringInterval);
-        console.log('✅ Sync monitoring started');
-      }
+		this.isInitialized = true;
+	}
 
-      // Set up cleanup tasks
-      this.setupCleanupTasks();
+	async shutdown(): Promise<void> {
+		if (!this.isInitialized) return;
+		// Stop monitoring
+		syncMonitor.stopMonitoring();
 
-      this.isInitialized = true;
-      console.log('🎉 Database Service initialized successfully');
-    } catch (error) {
-      console.error('❌ Failed to initialize Database Service:', error);
-      throw error;
-    }
-  }
+		// Perform final cleanup
+		await this.cleanup();
 
-  async shutdown(): Promise<void> {
-    if (!this.isInitialized) return;
+		this.isInitialized = false;
+	}
 
-    console.log('⏹️ Shutting down Database Service...');
+	// Repository access methods
+	get users() {
+		return userRepository;
+	}
 
-    try {
-      // Stop monitoring
-      syncMonitor.stopMonitoring();
+	get projects() {
+		return projectRepository;
+	}
 
-      // Perform final cleanup
-      await this.cleanup();
+	get agents() {
+		return agentRepository;
+	}
 
-      this.isInitialized = false;
-      console.log('✅ Database Service shutdown complete');
-    } catch (error) {
-      console.error('❌ Error during Database Service shutdown:', error);
-      throw error;
-    }
-  }
+	get sessions() {
+		return sessionRepository;
+	}
 
-  // Repository access methods
-  get users() {
-    return userRepository;
-  }
+	get messages() {
+		return messageRepository;
+	}
 
-  get projects() {
-    return projectRepository;
-  }
+	get memory() {
+		return memoryRepository;
+	}
 
-  get agents() {
-    return agentRepository;
-  }
+	// Sync management methods
+	async getSyncStatus() {
+		return await syncMonitor.getSyncStatus();
+	}
 
-  get sessions() {
-    return sessionRepository;
-  }
+	async getSyncHealth() {
+		return await syncMonitor.getSyncHealth();
+	}
 
-  get messages() {
-    return messageRepository;
-  }
+	async getConflicts() {
+		return await syncManager.getConflicts();
+	}
 
-  get memory() {
-    return memoryRepository;
-  }
+	async resolveConflict(
+		conflictId: string,
+		strategy: "local_wins" | "remote_wins" | "merge",
+		resolvedData?: unknown,
+	) {
+		return await syncManager.resolveConflict(
+			conflictId,
+			strategy,
+			resolvedData,
+		);
+	}
 
-  // Sync management methods
-  async getSyncStatus() {
-    return await syncMonitor.getSyncStatus();
-  }
+	async forceSyncAll() {
+		if (!this.config.enableSync) {
+			throw new Error("Sync is disabled");
+		}
 
-  async getSyncHealth() {
-    return await syncMonitor.getSyncHealth();
-  }
+		return await syncManager.forceSyncAll();
+	}
 
-  async getConflicts() {
-    return await syncManager.getConflicts();
-  }
+	// Monitoring and metrics
+	async getMetrics(hours = 24) {
+		return await syncMonitor.getDetailedMetrics(hours);
+	}
 
-  async resolveConflict(conflictId: string, strategy: 'local_wins' | 'remote_wins' | 'merge', resolvedData?: any) {
-    return await syncManager.resolveConflict(conflictId, strategy, resolvedData);
-  }
+	async recordMetric(type: string, value: number, metadata?: unknown) {
+		return await syncMonitor.recordMetric(type, value, metadata);
+	}
 
-  async forceSyncAll() {
-    if (!this.config.enableSync) {
-      throw new Error('Sync is disabled');
-    }
-    
-    return await syncManager.forceSyncAll();
-  }
+	// Health checks
+	async healthCheck(): Promise<{
+		status: "healthy" | "warning" | "critical";
+		database: boolean;
+		sync: boolean;
+		monitoring: boolean;
+		details: unknown;
+	}> {
+		const health = {
+			status: "healthy" as const,
+			database: false,
+			sync: false,
+			monitoring: false,
+			details: {},
+		};
 
-  // Monitoring and metrics
-  async getMetrics(hours: number = 24) {
-    return await syncMonitor.getDetailedMetrics(hours);
-  }
+		try {
+			// Test database connection
+			await db.select({ count: db.count() }).from(db.users).limit(1);
+			health.database = true;
+		} catch (error) {
+			health.status = "critical";
+			health.details.database = error.message;
+		}
 
-  async recordMetric(type: string, value: number, metadata?: any) {
-    return await syncMonitor.recordMetric(type, value, metadata);
-  }
+		try {
+			// Test sync system
+			if (this.config.enableSync) {
+				const syncStatus = await this.getSyncStatus();
+				health.sync = syncStatus.isOnline;
+				health.details.sync = syncStatus;
 
-  // Health checks
-  async healthCheck(): Promise<{
-    status: 'healthy' | 'warning' | 'critical';
-    database: boolean;
-    sync: boolean;
-    monitoring: boolean;
-    details: any;
-  }> {
-    const health = {
-      status: 'healthy' as const,
-      database: false,
-      sync: false,
-      monitoring: false,
-      details: {}
-    };
+				if (!syncStatus.isOnline) {
+					health.status = health.status === "critical" ? "critical" : "warning";
+				}
+			} else {
+				health.sync = true; // Not applicable
+			}
+		} catch (error) {
+			health.status = "critical";
+			health.details.sync = error.message;
+		}
 
-    try {
-      // Test database connection
-      await db.select({ count: db.count() }).from(db.users).limit(1);
-      health.database = true;
-    } catch (error) {
-      health.status = 'critical';
-      health.details.database = error.message;
-    }
+		try {
+			// Test monitoring
+			if (this.config.enableMonitoring) {
+				const syncHealth = await this.getSyncHealth();
+				health.monitoring = syncHealth.status !== "critical";
+				health.details.monitoring = syncHealth;
 
-    try {
-      // Test sync system
-      if (this.config.enableSync) {
-        const syncStatus = await this.getSyncStatus();
-        health.sync = syncStatus.isOnline;
-        health.details.sync = syncStatus;
-        
-        if (!syncStatus.isOnline) {
-          health.status = health.status === 'critical' ? 'critical' : 'warning';
-        }
-      } else {
-        health.sync = true; // Not applicable
-      }
-    } catch (error) {
-      health.status = 'critical';
-      health.details.sync = error.message;
-    }
+				if (syncHealth.status === "critical") {
+					health.status = "critical";
+				} else if (
+					syncHealth.status === "warning" &&
+					health.status === "healthy"
+				) {
+					health.status = "warning";
+				}
+			} else {
+				health.monitoring = true; // Not applicable
+			}
+		} catch (error) {
+			health.status = "warning";
+			health.details.monitoring = error.message;
+		}
 
-    try {
-      // Test monitoring
-      if (this.config.enableMonitoring) {
-        const syncHealth = await this.getSyncHealth();
-        health.monitoring = syncHealth.status !== 'critical';
-        health.details.monitoring = syncHealth;
-        
-        if (syncHealth.status === 'critical') {
-          health.status = 'critical';
-        } else if (syncHealth.status === 'warning' && health.status === 'healthy') {
-          health.status = 'warning';
-        }
-      } else {
-        health.monitoring = true; // Not applicable
-      }
-    } catch (error) {
-      health.status = 'warning';
-      health.details.monitoring = error.message;
-    }
+		return health;
+	}
 
-    return health;
-  }
+	// Maintenance operations
+	async cleanup(): Promise<void> {
+		// Clean up old sync data
+		await syncMonitor.cleanupOldData(this.config.metricsRetentionDays);
 
-  // Maintenance operations
-  async cleanup(): Promise<void> {
-    console.log('🧹 Starting database cleanup...');
+		// Clean up expired memories
+		await memoryRepository.cleanupExpired();
+	}
 
-    try {
-      // Clean up old sync data
-      await syncMonitor.cleanupOldData(this.config.metricsRetentionDays);
+	async backup(_destination?: string): Promise<string> {
+		// This would implement actual backup logic
+		// For now, return a placeholder
+		const backupId = `backup_${Date.now()}`;
+		return backupId;
+	}
 
-      // Clean up expired memories
-      await memoryRepository.cleanupExpired();
+	async restore(_backupId: string): Promise<void> {
+		// TODO: Implement backup restoration
+	}
 
-      console.log('✅ Database cleanup completed');
-    } catch (error) {
-      console.error('❌ Error during cleanup:', error);
-      throw error;
-    }
-  }
+	// Statistics and analytics
+	async getUsageStats() {
+		const stats = {
+			users: await userRepository.count(),
+			projects: await projectRepository.count(),
+			agents: await agentRepository.count(),
+			sessions: await sessionRepository.count(),
+			messages: await messageRepository.count(),
+			memories: await memoryRepository.count(),
+		};
 
-  async backup(destination?: string): Promise<string> {
-    console.log('💾 Creating database backup...');
-    
-    // This would implement actual backup logic
-    // For now, return a placeholder
-    const backupId = `backup_${Date.now()}`;
-    
-    console.log(`✅ Backup created with ID: ${backupId}`);
-    return backupId;
-  }
+		return {
+			...stats,
+			total: Object.values(stats).reduce((sum, count) => sum + count, 0),
+			timestamp: new Date(),
+		};
+	}
 
-  async restore(backupId: string): Promise<void> {
-    console.log(`🔄 Restoring from backup: ${backupId}`);
-    
-    // This would implement actual restore logic
-    // For now, just log
-    
-    console.log('✅ Restore completed');
-  }
+	async getPerformanceStats() {
+		const metrics = await this.getMetrics(24);
 
-  // Statistics and analytics
-  async getUsageStats() {
-    const stats = {
-      users: await userRepository.count(),
-      projects: await projectRepository.count(),
-      agents: await agentRepository.count(),
-      sessions: await sessionRepository.count(),
-      messages: await messageRepository.count(),
-      memories: await memoryRepository.count()
-    };
+		const latencyMetrics = metrics.metrics.filter((m) =>
+			m.type.includes("latency"),
+		);
+		const errorMetrics = metrics.metrics.filter((m) =>
+			m.type.includes("error"),
+		);
 
-    return {
-      ...stats,
-      total: Object.values(stats).reduce((sum, count) => sum + count, 0),
-      timestamp: new Date()
-    };
-  }
+		return {
+			avgLatency:
+				latencyMetrics.reduce((sum, m) => sum + m.avg, 0) /
+					latencyMetrics.length || 0,
+			errorRate:
+				errorMetrics.reduce((sum, m) => sum + m.avg, 0) / errorMetrics.length ||
+				0,
+			totalOperations: metrics.raw.length,
+			timeRange: metrics.timeRange,
+		};
+	}
 
-  async getPerformanceStats() {
-    const metrics = await this.getMetrics(24);
-    
-    const latencyMetrics = metrics.metrics.filter(m => m.type.includes('latency'));
-    const errorMetrics = metrics.metrics.filter(m => m.type.includes('error'));
-    
-    return {
-      avgLatency: latencyMetrics.reduce((sum, m) => sum + m.avg, 0) / latencyMetrics.length || 0,
-      errorRate: errorMetrics.reduce((sum, m) => sum + m.avg, 0) / errorMetrics.length || 0,
-      totalOperations: metrics.raw.length,
-      timeRange: metrics.timeRange
-    };
-  }
+	// Configuration management
+	updateConfig(newConfig: Partial<DatabaseServiceConfig>): void {
+		this.config = { ...this.config, ...newConfig };
+	}
 
-  // Configuration management
-  updateConfig(newConfig: Partial<DatabaseServiceConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-    console.log('⚙️ Database service configuration updated');
-  }
+	getConfig(): DatabaseServiceConfig {
+		return { ...this.config };
+	}
 
-  getConfig(): DatabaseServiceConfig {
-    return { ...this.config };
-  }
-
-  // Private methods
-  private setupCleanupTasks(): void {
-    // Set up periodic cleanup (every 24 hours)
-    setInterval(async () => {
-      try {
-        await this.cleanup();
-      } catch (error) {
-        console.error('Scheduled cleanup failed:', error);
-      }
-    }, 24 * 60 * 60 * 1000);
-
-    console.log('📅 Scheduled cleanup tasks configured');
-  }
+	// Private methods
+	private setupCleanupTasks(): void {
+		// Set up periodic cleanup (every 24 hours)
+		setInterval(
+			async () => {
+				try {
+					await this.cleanup();
+				} catch (_error) {
+					// Ignore cleanup errors
+				}
+			},
+			24 * 60 * 60 * 1000,
+		);
+	}
 }
 
 // Export singleton instance

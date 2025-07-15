@@ -5,12 +5,14 @@
 import { EventEmitter } from 'events';
 import type {
   TaskId,
-  Task,
+  Task
+} from '../types/agent.js';
+import {
   TaskStatus,
   Priority,
   AgentCapability
 } from '../types/agent.js';
-import type { ITaskQueue } from '../interfaces/IAgent.js';
+import type { ITaskQueue } from '../interfaces/IAgent';
 
 export interface QueueFilter {
   priority?: Priority;

@@ -186,3 +186,38 @@ export interface OrchestrationConfig {
     weights?: Record<AgentCapability, number>;
   };
 }
+
+// Legacy types for backward compatibility
+export type AgentType = 
+  | 'researcher'
+  | 'coder'
+  | 'tester'
+  | 'analyst'
+  | 'architect'
+  | 'optimizer'
+  | 'coordinator'
+  | 'monitor'
+  | 'documenter'
+  | 'reviewer'
+
+export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
+
+export type TaskType = 
+  | 'code-generation'
+  | 'testing'
+  | 'documentation'
+  | 'analysis'
+  | 'research'
+  | 'debugging'
+  | 'refactoring'
+  | 'optimization'
+  | 'deployment'
+  | 'monitoring'
+  | 'security'
+  | 'ui-design'
+  | 'database'
+  | 'api-integration'
+  | 'complex-feature'
+
+// Re-export the main types for external use
+export type { AgentId, TaskId, MessageId, AgentConfig, AgentMetrics, Task, TaskResult, AgentEvent, TaskEvent, OrchestrationConfig, AgentState, Message }

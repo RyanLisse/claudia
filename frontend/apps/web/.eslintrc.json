@@ -1,0 +1,30 @@
+{
+	"extends": ["next/core-web-vitals", "next/typescript"],
+	"env": {
+		"browser": true,
+		"node": true,
+		"es6": true
+	},
+	"globals": {
+		"React": "readonly",
+		"window": "readonly",
+		"document": "readonly",
+		"console": "readonly",
+		"process": "readonly",
+		"global": "readonly",
+		"fetch": "readonly",
+		"setTimeout": "readonly",
+		"setInterval": "readonly",
+		"clearInterval": "readonly"
+	},
+	"rules": {
+		"@typescript-eslint/no-unused-vars": "warn",
+		"@typescript-eslint/no-explicit-any": "warn",
+		"@typescript-eslint/no-non-null-assertion": "warn",
+		"no-unused-vars": "warn",
+		"no-console": ["warn", { "allow": ["warn", "error"] }],
+		"react/no-unescaped-entities": "off",
+		"@next/next/no-page-custom-font": "off"
+	},
+	"ignorePatterns": ["node_modules/", ".next/", "out/", "dist/", "**/*.d.ts"]
+}

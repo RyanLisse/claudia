@@ -1,31 +1,48 @@
 "use client";
 
-import { useEffect } from 'react';
-import { useSyncStore, useAuthStore } from '@/stores';
+import { useEffect, useState } from "react";
+import { useAuthStore, useSyncStore } from "@/stores";
 
 interface StoreProviderProps {
-  children: React.ReactNode;
+	children: React.ReactNode;
 }
 
 export function StoreProvider({ children }: StoreProviderProps) {
-  const { initializeSync } = useSyncStore();
-  const { refreshSession, isAuthenticated } = useAuthStore();
+	const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    // Initialize sync on app start
-    initializeSync();
-  }, [initializeSync]);
+	useEffect(() => {
+		setIsClient(true);
+	}, []);
 
-  useEffect(() => {
-    // Auto-refresh session if authenticated
-    if (isAuthenticated) {
-      const interval = setInterval(() => {
-        refreshSession();
-      }, 15 * 60 * 1000); // Refresh every 15 minutes
+	if (!isClient) {
+		return <>{children}</>;
+	}
 
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated, refreshSession]);
+	return <StoreProviderClient>{children}</StoreProviderClient>;
+}
 
-  return <>{children}</>;
+function StoreProviderClient({ children }: StoreProviderProps) {
+	const { initializeSync } = useSyncStore();
+	const { refreshSession, isAuthenticated } = useAuthStore();
+
+	useEffect(() => {
+		// Initialize sync on app start
+		initializeSync();
+	}, [initializeSync]);
+
+	useEffect(() => {
+		// Auto-refresh session if authenticated
+		if (isAuthenticated) {
+			const interval = setInterval(
+				() => {
+					refreshSession();
+				},
+				15 * 60 * 1000,
+			); // Refresh every 15 minutes
+
+			return () => clearInterval(interval);
+		}
+	}, [isAuthenticated, refreshSession]);
+
+	return <>{children}</>;
 }

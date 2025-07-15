@@ -1,11 +1,12 @@
 import type { MetadataRoute } from "next";
 
+export const dynamic = "force-static";
+
 export default function manifest(): MetadataRoute.Manifest {
 	return {
 		name: "frontend",
 		short_name: "frontend",
-		description:
-			"my pwa app",
+		description: "my pwa app",
 		start_url: "/new",
 		display: "standalone",
 		background_color: "#ffffff",

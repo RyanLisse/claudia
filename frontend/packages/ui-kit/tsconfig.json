@@ -1,31 +1,26 @@
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": false,
-    "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "declaration": true,
-    "declarationMap": true,
-    "outDir": "./dist",
-    "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"],
-      "@/components/*": ["./src/components/*"],
-      "@/tokens/*": ["./src/tokens/*"],
-      "@/utils/*": ["./src/utils/*"]
-    }
-  },
-  "include": ["src/**/*", "tests/**/*", "stories/**/*"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"noEmit": false,
+		"jsx": "react-jsx",
+		"outDir": "./dist",
+		"baseUrl": "./",
+		"paths": {
+			"@/*": ["./src/*"],
+			"@/components/*": ["./src/components/*"],
+			"@/tokens/*": ["./src/tokens/*"],
+			"@/utils/*": ["./src/utils/*"],
+			"@/hooks/*": ["./src/hooks/*"]
+		},
+		"types": ["@types/react", "@types/react-dom"],
+		"incremental": false,
+		"composite": false
+	},
+	"include": ["src/**/*", "tests/**/*", "stories/**/*"],
+	"exclude": ["node_modules", "dist", "storybook-static"]
 }

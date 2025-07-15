@@ -5,13 +5,39 @@
 		"build": {
 			"dependsOn": ["^build"],
 			"inputs": ["$TURBO_DEFAULT$", ".env*"],
-			"outputs": ["dist/**"]
+			"outputs": ["dist/**", ".next/**", "build/**"],
+			"cache": true
 		},
 		"lint": {
-			"dependsOn": ["^lint"]
+			"dependsOn": ["^lint"],
+			"cache": true,
+			"inputs": ["src/**/*.{ts,tsx,js,jsx}", "biome.json", "eslint.config.*"]
 		},
 		"check-types": {
-			"dependsOn": ["^check-types"]
+			"dependsOn": ["^check-types"],
+			"cache": true,
+			"inputs": ["src/**/*.{ts,tsx}", "tsconfig.json"]
+		},
+		"test": {
+			"dependsOn": ["^build"],
+			"cache": true,
+			"inputs": ["src/**/*.{ts,tsx,js,jsx}", "test/**/*", "vitest.config.*"],
+			"outputs": ["coverage/**"]
+		},
+		"test:coverage": {
+			"dependsOn": ["^build"],
+			"cache": true,
+			"inputs": ["src/**/*.{ts,tsx,js,jsx}", "test/**/*", "vitest.config.*"],
+			"outputs": ["coverage/**"]
+		},
+		"storybook": {
+			"cache": false,
+			"persistent": true
+		},
+		"build-storybook": {
+			"dependsOn": ["^build"],
+			"cache": true,
+			"outputs": ["storybook-static/**"]
 		},
 		"dev": {
 			"cache": false,
@@ -33,6 +59,7 @@
 			"cache": false,
 			"persistent": true
 		}
-		
-			}
+	},
+	"globalDependencies": ["**/.env*"],
+	"globalEnv": ["NODE_ENV", "DATABASE_URL", "NEXTAUTH_SECRET"]
 }

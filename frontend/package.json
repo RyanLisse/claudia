@@ -1,54 +1,81 @@
 {
-  "name": "frontend",
-  "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "scripts": {
-    "check": "biome check --write .",
-    "prepare": "husky",
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "check-types": "turbo check-types",
-    "test": "vitest",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run",
-    "dev:native": "turbo -F native dev",
-    "dev:web": "turbo -F web dev",
-    "dev:server": "turbo -F server dev",
-    "db:push": "turbo -F server db:push",
-    "db:studio": "turbo -F server db:studio",
-    "db:generate": "turbo -F server db:generate",
-    "db:migrate": "turbo -F server db:migrate"
-  },
-  "dependencies": {
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "inngest": "^3.40.1",
-    "lucide-react": "^0.525.0",
-    "tailwind-merge": "^3.3.1",
-    "tw-animate-css": "^1.3.5"
-  },
-  "devDependencies": {
-    "turbo": "^2.5.4",
-    "@biomejs/biome": "^2.0.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.5.0",
-    "vitest": "^2.1.5",
-    "@testing-library/react": "^16.1.0",
-    "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/user-event": "^14.5.2",
-    "@vitest/ui": "^2.1.5",
-    "@vitest/coverage-v8": "^2.1.5",
-    "jsdom": "^26.0.0"
-  },
-  "lint-staged": {
-    "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
-      "biome check --write ."
-    ]
-  },
-  "packageManager": "bun@1.2.18"
+	"name": "frontend",
+	"private": true,
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"check": "biome check --write .",
+		"prepare": "husky",
+		"dev": "turbo dev",
+		"build": "turbo build",
+		"check-types": "turbo check-types",
+		"test": "vitest --exclude='**/node_modules/**' --exclude='**/packages/wa-sqlite/**' --exclude='**/electric-sql/**' --reporter=default",
+		"test:watch": "vitest --watch",
+		"test:coverage": "vitest run --coverage --reporter=default",
+		"test:coverage:watch": "vitest --coverage --watch --reporter=default",
+		"test:coverage:open": "vitest run --coverage && node scripts/coverage-config.js open",
+		"test:coverage:stats": "node scripts/coverage-config.js stats",
+		"test:coverage:validate": "node scripts/coverage-config.js validate",
+		"test:coverage:all": "node scripts/coverage-config.js all",
+		"test:ui": "vitest --ui",
+		"test:run": "vitest run --reporter=default",
+		"test:fast": "vitest run --reporter=basic --no-coverage --bail=1",
+		"test:clean": "node scripts/test-cache-cleanup.js",
+		"test:parallel": "vitest run --reporter=basic --no-coverage --threads",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui",
+		"test:e2e:headed": "playwright test --headed",
+		"test:e2e:debug": "playwright test --debug",
+		"test:e2e:report": "playwright show-report",
+		"test:e2e:install": "playwright install",
+		"test:e2e:basic": "playwright test --config=playwright.config.basic.ts",
+		"test:e2e:smoke": "playwright test --config=playwright.config.basic.ts tests/e2e/basic.test.ts",
+		"dev:native": "turbo -F native dev",
+		"dev:web": "turbo -F web dev",
+		"dev:server": "turbo -F server dev",
+		"db:push": "turbo -F server db:push",
+		"db:studio": "turbo -F server db:studio",
+		"db:generate": "turbo -F server db:generate",
+		"db:migrate": "turbo -F server db:migrate",
+		"security:audit": "node scripts/security-audit.js",
+		"performance:check": "node scripts/performance-check.js",
+		"quality:full": "npm run check && npm run check-types && npm run test:run && npm run test:e2e && npm run security:audit",
+		"ci:quality": "npm run quality:full && npm run performance:check",
+		"coverage:check": "npm run test:coverage:validate && npm run test:coverage:all",
+		"test:optimize": "npm run test:clean && npm run test:fast"
+	},
+	"dependencies": {
+		"class-variance-authority": "^0.7.1",
+		"clsx": "^2.1.1",
+		"inngest": "^3.40.1",
+		"lucide-react": "^0.525.0",
+		"tailwind-merge": "^3.3.1",
+		"tw-animate-css": "^1.3.5",
+		"wa-sqlite": "^1.0.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.0.0",
+		"@playwright/test": "^1.54.1",
+		"@testing-library/jest-dom": "^6.6.3",
+		"@testing-library/react": "^16.1.0",
+		"@testing-library/user-event": "^14.5.2",
+		"@vitejs/plugin-react": "^4.3.4",
+		"@vitest/coverage-v8": "^2.1.5",
+		"@vitest/ui": "^2.1.5",
+		"husky": "^9.1.7",
+		"jest-axe": "^10.0.0",
+		"jsdom": "^26.0.0",
+		"lint-staged": "^15.5.0",
+		"playwright": "^1.54.1",
+		"turbo": "^2.5.4",
+		"vitest": "^2.1.5"
+	},
+	"lint-staged": {
+		"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
+			"biome check --write ."
+		]
+	},
+	"packageManager": "bun@1.2.18"
 }

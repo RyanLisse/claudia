@@ -1,344 +1,337 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { useAuthStore } from '@/stores/auth-store';
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useAuthStore } from "@/stores/auth-store";
 
 // Mock fetch
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
-Object.defineProperty(window, 'localStorage', {
-  value: localStorageMock,
-});
+describe("Auth Store", () => {
+	beforeEach(() => {
+		useAuthStore.setState(useAuthStore.getInitialState());
+		vi.clearAllMocks();
+	});
 
-describe('Auth Store', () => {
-  beforeEach(() => {
-    useAuthStore.setState(useAuthStore.getInitialState());
-    vi.clearAllMocks();
-  });
+	describe("Login", () => {
+		it("should login successfully", async () => {
+			const mockUser = {
+				id: "1",
+				email: "test@example.com",
+				name: "Test User",
+				role: "user" as const,
+				preferences: {
+					theme: "system" as const,
+					language: "en",
+					notifications: true,
+					emailUpdates: false,
+				},
+			};
 
-  describe('Login', () => {
-    it('should login successfully', async () => {
-      const mockUser = {
-        id: '1',
-        email: 'test@example.com',
-        name: 'Test User',
-        role: 'user' as const,
-        preferences: {
-          theme: 'system' as const,
-          language: 'en',
-          notifications: true,
-          emailUpdates: false,
-        },
-      };
+			const mockSession = {
+				id: "session-1",
+				userId: "1",
+				expiresAt: new Date(Date.now() + 3600000),
+				refreshToken: "refresh-token",
+			};
 
-      const mockSession = {
-        id: 'session-1',
-        userId: '1',
-        expiresAt: new Date(Date.now() + 3600000),
-        refreshToken: 'refresh-token',
-      };
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					user: mockUser,
+					session: mockSession,
+					permissions: ["read", "write"],
+				}),
+			});
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          user: mockUser,
-          session: mockSession,
-          permissions: ['read', 'write'],
-        }),
-      });
+			const { login } = useAuthStore.getState();
 
-      const { login } = useAuthStore.getState();
-      
-      await login({
-        email: 'test@example.com',
-        password: 'password',
-      });
+			await login({
+				email: "test@example.com",
+				password: "password",
+			});
 
-      const state = useAuthStore.getState();
-      expect(state.user).toEqual(mockUser);
-      expect(state.session).toEqual(mockSession);
-      expect(state.isAuthenticated).toBe(true);
-      expect(state.permissions).toEqual(['read', 'write']);
-      expect(state.isLoading).toBe(false);
-    });
+			const state = useAuthStore.getState();
+			expect(state.user).toEqual(mockUser);
+			expect(state.session).toEqual(mockSession);
+			expect(state.isAuthenticated).toBe(true);
+			expect(state.permissions).toEqual(["read", "write"]);
+			expect(state.isLoading).toBe(false);
+		});
 
-    it('should handle login failure', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-      });
+		it("should handle login failure", async () => {
+			mockFetch.mockResolvedValueOnce({
+				ok: false,
+				status: 401,
+			});
 
-      const { login } = useAuthStore.getState();
-      
-      await expect(login({
-        email: 'test@example.com',
-        password: 'wrong-password',
-      })).rejects.toThrow('Login failed');
+			const { login } = useAuthStore.getState();
 
-      const state = useAuthStore.getState();
-      expect(state.user).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
-      expect(state.isLoading).toBe(false);
-    });
+			await expect(
+				login({
+					email: "test@example.com",
+					password: "wrong-password",
+				}),
+			).rejects.toThrow("Login failed");
 
-    it('should set loading state during login', async () => {
-      let resolveLogin: (value: any) => void;
-      const loginPromise = new Promise((resolve) => {
-        resolveLogin = resolve;
-      });
+			const state = useAuthStore.getState();
+			expect(state.user).toBeNull();
+			expect(state.isAuthenticated).toBe(false);
+			expect(state.isLoading).toBe(false);
+		});
 
-      mockFetch.mockReturnValueOnce(loginPromise);
+		it("should set loading state during login", async () => {
+			let resolveLogin: (value: any) => void;
+			const loginPromise = new Promise((resolve) => {
+				resolveLogin = resolve;
+			});
 
-      const { login } = useAuthStore.getState();
-      
-      const loginAttempt = login({
-        email: 'test@example.com',
-        password: 'password',
-      });
+			mockFetch.mockReturnValueOnce(loginPromise);
 
-      // Check loading state
-      expect(useAuthStore.getState().isLoading).toBe(true);
+			const { login } = useAuthStore.getState();
 
-      // Resolve the promise
-      resolveLogin!({
-        ok: true,
-        json: async () => ({
-          user: { id: '1', email: 'test@example.com' },
-          session: { id: 'session-1' },
-          permissions: [],
-        }),
-      });
+			const loginAttempt = login({
+				email: "test@example.com",
+				password: "password",
+			});
 
-      await loginAttempt;
+			// Check loading state
+			expect(useAuthStore.getState().isLoading).toBe(true);
 
-      expect(useAuthStore.getState().isLoading).toBe(false);
-    });
-  });
+			// Resolve the promise
+			resolveLogin?.({
+				ok: true,
+				json: async () => ({
+					user: { id: "1", email: "test@example.com" },
+					session: { id: "session-1" },
+					permissions: [],
+				}),
+			});
 
-  describe('Logout', () => {
-    it('should logout successfully', async () => {
-      // Set initial authenticated state
-      useAuthStore.setState({
-        user: { id: '1', email: 'test@example.com' } as any,
-        session: { id: 'session-1' } as any,
-        isAuthenticated: true,
-        permissions: ['read'],
-        isLoading: false,
-      });
+			await loginAttempt;
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-      });
+			expect(useAuthStore.getState().isLoading).toBe(false);
+		});
+	});
 
-      const { logout } = useAuthStore.getState();
-      
-      await logout();
+	describe("Logout", () => {
+		it("should logout successfully", async () => {
+			// Set initial authenticated state
+			useAuthStore.setState({
+				user: { id: "1", email: "test@example.com" } as any,
+				session: { id: "session-1" } as any,
+				isAuthenticated: true,
+				permissions: ["read"],
+				isLoading: false,
+			});
 
-      const state = useAuthStore.getState();
-      expect(state.user).toBeNull();
-      expect(state.session).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
-      expect(state.permissions).toEqual([]);
-    });
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+			});
 
-    it('should logout even if API call fails', async () => {
-      // Set initial authenticated state
-      useAuthStore.setState({
-        user: { id: '1', email: 'test@example.com' } as any,
-        session: { id: 'session-1' } as any,
-        isAuthenticated: true,
-        permissions: ['read'],
-        isLoading: false,
-      });
+			const { logout } = useAuthStore.getState();
 
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+			await logout();
 
-      const { logout } = useAuthStore.getState();
-      
-      await logout();
+			const state = useAuthStore.getState();
+			expect(state.user).toBeNull();
+			expect(state.session).toBeNull();
+			expect(state.isAuthenticated).toBe(false);
+			expect(state.permissions).toEqual([]);
+		});
 
-      const state = useAuthStore.getState();
-      expect(state.user).toBeNull();
-      expect(state.session).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
-    });
-  });
+		it("should logout even if API call fails", async () => {
+			// Set initial authenticated state
+			useAuthStore.setState({
+				user: { id: "1", email: "test@example.com" } as any,
+				session: { id: "session-1" } as any,
+				isAuthenticated: true,
+				permissions: ["read"],
+				isLoading: false,
+			});
 
-  describe('Session Refresh', () => {
-    it('should refresh session successfully', async () => {
-      const originalSession = {
-        id: 'session-1',
-        userId: '1',
-        expiresAt: new Date(),
-        refreshToken: 'refresh-token',
-      };
+			mockFetch.mockRejectedValueOnce(new Error("Network error"));
 
-      useAuthStore.setState({
-        session: originalSession,
-        isAuthenticated: true,
-      });
+			const { logout } = useAuthStore.getState();
 
-      const newSession = {
-        ...originalSession,
-        id: 'session-2',
-        expiresAt: new Date(Date.now() + 3600000),
-      };
+			await logout();
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          session: newSession,
-          user: { id: '1', email: 'test@example.com' },
-          permissions: ['read', 'write'],
-        }),
-      });
+			const state = useAuthStore.getState();
+			expect(state.user).toBeNull();
+			expect(state.session).toBeNull();
+			expect(state.isAuthenticated).toBe(false);
+		});
+	});
 
-      const { refreshSession } = useAuthStore.getState();
-      
-      await refreshSession();
+	describe("Session Refresh", () => {
+		it("should refresh session successfully", async () => {
+			const originalSession = {
+				id: "session-1",
+				userId: "1",
+				expiresAt: new Date(),
+				refreshToken: "refresh-token",
+			};
 
-      const state = useAuthStore.getState();
-      expect(state.session).toEqual(newSession);
-      expect(state.permissions).toEqual(['read', 'write']);
-    });
+			useAuthStore.setState({
+				session: originalSession,
+				isAuthenticated: true,
+			});
 
-    it('should logout on refresh failure', async () => {
-      useAuthStore.setState({
-        session: { refreshToken: 'invalid-token' } as any,
-        isAuthenticated: true,
-      });
+			const newSession = {
+				...originalSession,
+				id: "session-2",
+				expiresAt: new Date(Date.now() + 3600000),
+			};
 
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-      });
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => ({
+					session: newSession,
+					user: { id: "1", email: "test@example.com" },
+					permissions: ["read", "write"],
+				}),
+			});
 
-      const logoutSpy = vi.spyOn(useAuthStore.getState(), 'logout');
+			const { refreshSession } = useAuthStore.getState();
 
-      const { refreshSession } = useAuthStore.getState();
-      
-      await refreshSession();
+			await refreshSession();
 
-      expect(logoutSpy).toHaveBeenCalled();
-    });
+			const state = useAuthStore.getState();
+			expect(state.session).toEqual(newSession);
+			expect(state.permissions).toEqual(["read", "write"]);
+		});
 
-    it('should not refresh if no session exists', async () => {
-      useAuthStore.setState({
-        session: null,
-        isAuthenticated: false,
-      });
+		it("should logout on refresh failure", async () => {
+			useAuthStore.setState({
+				session: { refreshToken: "invalid-token" } as any,
+				isAuthenticated: true,
+			});
 
-      const { refreshSession } = useAuthStore.getState();
-      
-      await refreshSession();
+			mockFetch.mockResolvedValueOnce({
+				ok: false,
+				status: 401,
+			});
 
-      expect(mockFetch).not.toHaveBeenCalled();
-    });
-  });
+			const logoutSpy = vi.spyOn(useAuthStore.getState(), "logout");
 
-  describe('User Updates', () => {
-    beforeEach(() => {
-      useAuthStore.setState({
-        user: {
-          id: '1',
-          email: 'test@example.com',
-          name: 'Test User',
-          role: 'user',
-          preferences: {
-            theme: 'system',
-            language: 'en',
-            notifications: true,
-            emailUpdates: false,
-          },
-        } as any,
-        isAuthenticated: true,
-      });
-    });
+			const { refreshSession } = useAuthStore.getState();
 
-    it('should update user successfully', async () => {
-      const updates = { name: 'Updated Name' };
-      const updatedUser = { 
-        ...useAuthStore.getState().user, 
-        ...updates 
-      };
+			await refreshSession();
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => updatedUser,
-      });
+			expect(logoutSpy).toHaveBeenCalled();
+		});
 
-      const { updateUser } = useAuthStore.getState();
-      
-      await updateUser(updates);
+		it("should not refresh if no session exists", async () => {
+			useAuthStore.setState({
+				session: null,
+				isAuthenticated: false,
+			});
 
-      expect(useAuthStore.getState().user?.name).toBe('Updated Name');
-    });
+			const { refreshSession } = useAuthStore.getState();
 
-    it('should update preferences optimistically', async () => {
-      const updates = { theme: 'dark' as const };
+			await refreshSession();
 
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-      });
+			expect(mockFetch).not.toHaveBeenCalled();
+		});
+	});
 
-      const { updatePreferences } = useAuthStore.getState();
-      
-      // Start the update
-      const updatePromise = updatePreferences(updates);
+	describe("User Updates", () => {
+		beforeEach(() => {
+			useAuthStore.setState({
+				user: {
+					id: "1",
+					email: "test@example.com",
+					name: "Test User",
+					role: "user",
+					preferences: {
+						theme: "system",
+						language: "en",
+						notifications: true,
+						emailUpdates: false,
+					},
+				} as any,
+				isAuthenticated: true,
+			});
+		});
 
-      // Check optimistic update
-      expect(useAuthStore.getState().user?.preferences.theme).toBe('dark');
+		it("should update user successfully", async () => {
+			const updates = { name: "Updated Name" };
+			const updatedUser = {
+				...useAuthStore.getState().user,
+				...updates,
+			};
 
-      await updatePromise;
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				json: async () => updatedUser,
+			});
 
-      // Confirm the change persists
-      expect(useAuthStore.getState().user?.preferences.theme).toBe('dark');
-    });
+			const { updateUser } = useAuthStore.getState();
 
-    it('should revert optimistic update on failure', async () => {
-      const originalTheme = useAuthStore.getState().user?.preferences.theme;
-      const updates = { theme: 'dark' as const };
+			await updateUser(updates);
 
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      });
+			expect(useAuthStore.getState().user?.name).toBe("Updated Name");
+		});
 
-      const { updatePreferences } = useAuthStore.getState();
-      
-      await expect(updatePreferences(updates)).rejects.toThrow();
+		it("should update preferences optimistically", async () => {
+			const updates = { theme: "dark" as const };
 
-      // Check that the optimistic update was reverted
-      expect(useAuthStore.getState().user?.preferences.theme).toBe(originalTheme);
-    });
-  });
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+			});
 
-  describe('Store Reset', () => {
-    it('should reset store to initial state', () => {
-      // Set some state
-      useAuthStore.setState({
-        user: { id: '1', email: 'test@example.com' } as any,
-        session: { id: 'session-1' } as any,
-        isAuthenticated: true,
-        permissions: ['read'],
-        isLoading: true,
-      });
+			const { updatePreferences } = useAuthStore.getState();
 
-      const { reset } = useAuthStore.getState();
-      reset();
+			// Start the update
+			const updatePromise = updatePreferences(updates);
 
-      const state = useAuthStore.getState();
-      expect(state.user).toBeNull();
-      expect(state.session).toBeNull();
-      expect(state.isAuthenticated).toBe(false);
-      expect(state.permissions).toEqual([]);
-      expect(state.isLoading).toBe(false);
-    });
-  });
+			// Check optimistic update
+			expect(useAuthStore.getState().user?.preferences.theme).toBe("dark");
+
+			await updatePromise;
+
+			// Confirm the change persists
+			expect(useAuthStore.getState().user?.preferences.theme).toBe("dark");
+		});
+
+		it("should revert optimistic update on failure", async () => {
+			const originalTheme = useAuthStore.getState().user?.preferences.theme;
+			const updates = { theme: "dark" as const };
+
+			mockFetch.mockResolvedValueOnce({
+				ok: false,
+				status: 500,
+			});
+
+			const { updatePreferences } = useAuthStore.getState();
+
+			await expect(updatePreferences(updates)).rejects.toThrow();
+
+			// Check that the optimistic update was reverted
+			expect(useAuthStore.getState().user?.preferences.theme).toBe(
+				originalTheme,
+			);
+		});
+	});
+
+	describe("Store Reset", () => {
+		it("should reset store to initial state", () => {
+			// Set some state
+			useAuthStore.setState({
+				user: { id: "1", email: "test@example.com" } as any,
+				session: { id: "session-1" } as any,
+				isAuthenticated: true,
+				permissions: ["read"],
+				isLoading: true,
+			});
+
+			const { reset } = useAuthStore.getState();
+			reset();
+
+			const state = useAuthStore.getState();
+			expect(state.user).toBeNull();
+			expect(state.session).toBeNull();
+			expect(state.isAuthenticated).toBe(false);
+			expect(state.permissions).toEqual([]);
+			expect(state.isLoading).toBe(false);
+		});
+	});
 });

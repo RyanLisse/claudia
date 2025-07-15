@@ -1,32 +1,15 @@
 "use client";
 
-import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { queryClient } from "@/utils/trpc";
-import { ThemeProvider } from "./theme-provider";
-import { Toaster } from "./ui/sonner";
-import { StoreProvider } from "./store-provider";
+import { OutputCacheProvider } from "@/lib/outputCache";
 
+interface ProvidersProps {
+  children: React.ReactNode;
+}
 
-export default function Providers({
-  children
-}: {
-  children: React.ReactNode
-}) {
+export default function Providers({ children }: ProvidersProps) {
   return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      <QueryClientProvider client={queryClient}>
-        <StoreProvider>
-          {children}
-        </StoreProvider>
-        <ReactQueryDevtools />
-      </QueryClientProvider>
-      <Toaster richColors />
-    </ThemeProvider>
+    <OutputCacheProvider>
+      {children}
+    </OutputCacheProvider>
   );
 }

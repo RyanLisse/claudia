@@ -9,10 +9,12 @@ import type {
   MessageId,
   AgentConfig,
   AgentMetrics,
-  AgentStatus,
   Task,
   TaskResult,
-  Message,
+  Message
+} from '../types/agent.js';
+import {
+  AgentStatus,
   TaskStatus,
   Priority
 } from '../types/agent.js';
@@ -272,7 +274,7 @@ export abstract class BaseAgent extends EventEmitter implements IAgent, IAgentLi
   protected abstract onSendMessage(message: Message): Promise<void>;
   protected abstract onCancelTask(taskId: TaskId): Promise<void>;
 
-  protected async onInitialize(config: AgentConfig): Promise<void> {
+  protected async onInitialize(_config: AgentConfig): Promise<void> {
     // Default implementation - override if needed
   }
 
@@ -280,7 +282,7 @@ export abstract class BaseAgent extends EventEmitter implements IAgent, IAgentLi
     // Default implementation - override if needed
   }
 
-  protected async onConfigUpdate(config: Partial<AgentConfig>): Promise<void> {
+  protected async onConfigUpdate(_config: Partial<AgentConfig>): Promise<void> {
     // Default implementation - override if needed
   }
 
@@ -288,12 +290,12 @@ export abstract class BaseAgent extends EventEmitter implements IAgent, IAgentLi
     // Default implementation - override if needed
   }
 
-  protected async onPauseTask(taskId: TaskId): Promise<boolean> {
+  protected async onPauseTask(_taskId: TaskId): Promise<boolean> {
     // Default implementation - override if needed
     return false;
   }
 
-  protected async onResumeTask(taskId: TaskId): Promise<boolean> {
+  protected async onResumeTask(_taskId: TaskId): Promise<boolean> {
     // Default implementation - override if needed
     return false;
   }

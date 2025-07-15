@@ -1,0 +1,39 @@
+{
+	"timestamp": "2025-07-15T10:13:07.446Z",
+	"summary": {
+		"totalIssues": 0,
+		"criticalIssues": 0,
+		"highIssues": 0,
+		"moderateIssues": 0,
+		"lowIssues": 0
+	},
+	"audits": {
+		"dependencies": {
+			"error": "Command failed: bun audit --json\n[0.68ms] \".env\"\n\u001b[0m\u001b[1mbun audit \u001b[0m\u001b[2mv1.2.18 (0d4089ea)\u001b[0m\n"
+		},
+		"typescript": {
+			"securityChecks": {
+				"strictMode": true,
+				"noImplicitAny": true,
+				"noImplicitReturns": true,
+				"strictNullChecks": true
+			},
+			"score": 4,
+			"maxScore": 4
+		},
+		"linting": {
+			"securityRulesEnabled": 2,
+			"a11yRulesEnabled": 7,
+			"linterEnabled": true
+		},
+		"bundle": {
+			"securityChecks": {
+				"sourceMapDisabled": true,
+				"devToolsDisabled": true,
+				"debugStatementsRemoved": true
+			},
+			"warnings": []
+		}
+	},
+	"recommendations": []
+}

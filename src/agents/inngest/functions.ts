@@ -325,71 +325,286 @@ export const routeMessage = inngest.createFunction(
   }
 );
 
-// Helper functions (these would be implemented based on your storage solution)
+// Helper functions - Enhanced implementations
+import { AgentRegistry } from '../core/AgentRegistry.js';
+import { TaskQueue } from '../core/TaskQueue.js';
+import { AgentOrchestrator } from '../core/AgentOrchestrator.js';
+import { MessageBroker } from '../communication/MessageBroker.js';
+import { syncManager } from '../../../frontend/apps/server/src/db/electric.js';
+
+// Global instances (these would be injected in real implementation)
+let globalAgentRegistry: AgentRegistry;
+let globalTaskQueue: TaskQueue;
+let globalOrchestrator: AgentOrchestrator;
+let globalMessageBroker: MessageBroker;
+
+// Initialize global instances
+export function initializeGlobalAgentSystem() {
+  globalAgentRegistry = new AgentRegistry();
+  globalTaskQueue = new TaskQueue(1000);
+  globalMessageBroker = new MessageBroker();
+  globalOrchestrator = new AgentOrchestrator(
+    globalAgentRegistry,
+    globalTaskQueue,
+    { getSystemHealth: async () => ({ healthy: true }) } as any,
+    globalMessageBroker
+  );
+}
+
 async function findAgentsByCapabilities(capabilities: string[]): Promise<any[]> {
-  // Implementation depends on your agent registry
-  return [];
+  if (!globalAgentRegistry) initializeGlobalAgentSystem();
+  
+  const agents = [];
+  for (const capability of capabilities) {
+    const agentIds = await globalAgentRegistry.findByCapability(capability as any);
+    for (const agentId of agentIds) {
+      const agentInfo = globalAgentRegistry.getAgentInfo(agentId);
+      if (agentInfo && agentInfo.currentStatus === 'idle') {
+        agents.push({
+          id: agentId,
+          info: agentInfo,
+          capabilities: agentInfo.capabilities,
+          currentLoad: agentInfo.currentTasks.length
+        });
+      }
+    }
+  }
+  
+  return agents.sort((a, b) => a.currentLoad - b.currentLoad);
 }
 
 async function selectBestAgent(agents: any[], priority: number): Promise<any> {
-  // Implement load balancing logic
-  return agents[0];
+  if (agents.length === 0) {
+    throw new Error('No available agents');
+  }
+  
+  // Load balancing algorithm based on:
+  // 1. Current task load
+  // 2. Agent performance metrics
+  // 3. Task priority
+  
+  const scoredAgents = agents.map(agent => {
+    const loadScore = 1 / (agent.currentLoad + 1); // Lower load = higher score
+    const performanceScore = agent.info.metrics?.tasksCompleted || 0;
+    const priorityBonus = priority > 2 ? 1.2 : 1.0; // Boost for high priority
+    
+    return {
+      ...agent,
+      score: (loadScore * 0.5 + performanceScore * 0.3) * priorityBonus
+    };
+  });
+  
+  return scoredAgents.sort((a, b) => b.score - a.score)[0];
 }
 
 async function assignTaskToAgent(taskId: string, agentId: string): Promise<{ success: boolean }> {
-  // Implementation depends on your agent communication system
-  return { success: true };
+  if (!globalAgentRegistry || !globalTaskQueue) {
+    initializeGlobalAgentSystem();
+  }
+  
+  try {
+    // Get the task from the queue
+    const task = await globalTaskQueue.getTask(taskId);
+    if (!task) {
+      return { success: false };
+    }
+    
+    // Get the agent
+    const agent = await globalAgentRegistry.getAgent(agentId);
+    if (!agent) {
+      return { success: false };
+    }
+    
+    // Assign the task
+    const assigned = await agent.assignTask(task);
+    
+    if (assigned) {
+      // Update task status
+      await globalTaskQueue.updateTaskStatus(taskId, TaskStatus.IN_PROGRESS);
+      
+      // Store assignment in ElectricSQL for real-time sync
+      await syncManager.initialize();
+      // Would update assignment tables here
+      
+      return { success: true };
+    }
+    
+    return { success: false };
+  } catch (error) {
+    console.error('Failed to assign task to agent:', error);
+    return { success: false };
+  }
 }
 
 async function queueTask(task: Task): Promise<void> {
-  // Implementation depends on your task queue
+  if (!globalTaskQueue) initializeGlobalAgentSystem();
+  
+  await globalTaskQueue.addTask(task);
+  
+  // Sync to ElectricSQL for real-time updates
+  try {
+    await syncManager.initialize();
+    // Store task in synchronized database
+    // Would use electric DB here for real-time sync
+  } catch (error) {
+    console.error('Failed to sync task to ElectricSQL:', error);
+  }
 }
 
 async function getTaskStatus(taskId: string): Promise<TaskStatus> {
-  // Implementation depends on your storage
-  return TaskStatus.IN_PROGRESS;
+  if (!globalTaskQueue) initializeGlobalAgentSystem();
+  
+  const task = await globalTaskQueue.getTask(taskId);
+  return task?.status || TaskStatus.FAILED;
 }
 
 async function cancelTaskOnAgent(agentId: string, taskId: string): Promise<void> {
-  // Implementation depends on your agent communication system
+  if (!globalAgentRegistry) initializeGlobalAgentSystem();
+  
+  const agent = await globalAgentRegistry.getAgent(agentId);
+  if (agent) {
+    await agent.cancelTask(taskId);
+  }
 }
 
 async function reassignTask(taskId: string): Promise<void> {
-  // Re-trigger task creation event
+  if (!globalTaskQueue) initializeGlobalAgentSystem();
+  
+  const task = await globalTaskQueue.getTask(taskId);
+  if (task) {
+    // Reset task status and increment retry count
+    task.status = TaskStatus.PENDING;
+    task.retryCount = (task.retryCount || 0) + 1;
+    
+    // Re-queue the task
+    await queueTask(task);
+  }
 }
 
 async function getTask(taskId: string): Promise<Task | null> {
-  // Implementation depends on your storage
-  return null;
+  if (!globalTaskQueue) initializeGlobalAgentSystem();
+  
+  return await globalTaskQueue.getTask(taskId);
 }
 
 async function updateTaskStatus(taskId: string, status: TaskStatus): Promise<void> {
-  // Implementation depends on your storage
+  if (!globalTaskQueue) initializeGlobalAgentSystem();
+  
+  await globalTaskQueue.updateTaskStatus(taskId, status);
 }
 
 async function retryTaskAssignment(taskId: string, maxRetries: number): Promise<void> {
-  // Implementation depends on your retry logic
+  const task = await getTask(taskId);
+  if (task && (task.retryCount || 0) < maxRetries) {
+    await reassignTask(taskId);
+  } else {
+    await updateTaskStatus(taskId, TaskStatus.FAILED);
+  }
 }
 
 async function updateAgentStatus(agentId: string, status: string, metrics: any): Promise<void> {
-  // Implementation depends on your agent registry
+  if (!globalAgentRegistry) initializeGlobalAgentSystem();
+  
+  const agentInfo = globalAgentRegistry.getAgentInfo(agentId);
+  if (agentInfo) {
+    agentInfo.currentStatus = status as any;
+    agentInfo.metrics = { ...agentInfo.metrics, ...metrics };
+    agentInfo.lastHeartbeat = new Date();
+  }
 }
 
 async function createNewAgent(config: any): Promise<void> {
-  // Implementation depends on your agent creation system
+  // Import agent types
+  const { createCoderAgent } = await import('../examples/CoderAgent.js');
+  const { createResearcherAgent } = await import('../examples/ResearcherAgent.js');
+  const { createAnalystAgent } = await import('../examples/AnalystAgent.js');
+  
+  if (!globalAgentRegistry) initializeGlobalAgentSystem();
+  
+  let agent;
+  const agentType = config.type || 'coder';
+  
+  switch (agentType) {
+    case 'coder':
+      agent = createCoderAgent(config);
+      break;
+    case 'researcher':
+      agent = createResearcherAgent(config);
+      break;
+    case 'analyst':
+      agent = createAnalystAgent(config);
+      break;
+    default:
+      agent = createCoderAgent(config);
+  }
+  
+  await agent.start();
+  await globalAgentRegistry.register(agent);
+  
+  console.log(`Created new ${agentType} agent: ${agent.id}`);
 }
 
 async function gracefullyRemoveAgents(count: number): Promise<string[]> {
-  // Implementation depends on your agent management system
-  return [];
+  if (!globalAgentRegistry) initializeGlobalAgentSystem();
+  
+  const allAgents = await globalAgentRegistry.getAllAgents();
+  const removedAgents = [];
+  
+  // Sort by current load (remove least busy agents first)
+  const sortedAgents = [];
+  for (const agentId of allAgents) {
+    const agentInfo = globalAgentRegistry.getAgentInfo(agentId);
+    if (agentInfo) {
+      sortedAgents.push({ id: agentId, load: agentInfo.currentTasks.length });
+    }
+  }
+  
+  sortedAgents.sort((a, b) => a.load - b.load);
+  
+  for (let i = 0; i < Math.min(count, sortedAgents.length); i++) {
+    const agentId = sortedAgents[i].id;
+    const agent = await globalAgentRegistry.getAgent(agentId);
+    
+    if (agent) {
+      await agent.stop();
+      await globalAgentRegistry.unregister(agentId);
+      removedAgents.push(agentId);
+    }
+  }
+  
+  return removedAgents;
 }
 
 async function getAllActiveAgents(): Promise<string[]> {
-  // Implementation depends on your agent registry
-  return [];
+  if (!globalAgentRegistry) initializeGlobalAgentSystem();
+  
+  const allAgents = await globalAgentRegistry.getAllAgents();
+  const activeAgents = [];
+  
+  for (const agentId of allAgents) {
+    const agentInfo = globalAgentRegistry.getAgentInfo(agentId);
+    if (agentInfo && agentInfo.currentStatus !== 'offline') {
+      activeAgents.push(agentId);
+    }
+  }
+  
+  return activeAgents;
 }
 
 async function deliverMessage(agentId: string, message: any): Promise<boolean> {
-  // Implementation depends on your message delivery system
-  return true;
+  if (!globalAgentRegistry || !globalMessageBroker) {
+    initializeGlobalAgentSystem();
+  }
+  
+  try {
+    const agent = await globalAgentRegistry.getAgent(agentId);
+    if (agent) {
+      await agent.handleMessage(message);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error('Failed to deliver message:', error);
+    return false;
+  }
 }
