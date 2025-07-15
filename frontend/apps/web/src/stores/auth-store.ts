@@ -190,3 +190,6 @@ export const useAuthStore = create<AuthStore>()(
 		{ name: "Auth Store" },
 	),
 );
+
+// Add static method to get initial state for testing
+useAuthStore.getInitialState = () => initialState;

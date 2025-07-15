@@ -116,9 +116,243 @@ global.WebSocket = vi.fn().mockImplementation(() => ({
 	readyState: 1,
 }));
 
-// Mock Tauri API
+// Mock Tauri API with proper implementations
 vi.mock("@tauri-apps/api/core", () => ({
-	invoke: vi.fn(),
+	invoke: vi.fn().mockImplementation(async (command: string, args?: any) => {
+		// Return mock data based on command
+		switch (command) {
+			case "list_projects":
+				return [];
+			case "get_project_sessions":
+				return [];
+			case "list_agents":
+				return [];
+			case "list_running_sessions":
+				return [];
+			case "check_claude_version":
+				return { is_installed: false, version: null, output: "Mock version" };
+			case "get_session_output":
+				return "";
+			case "list_agent_runs":
+				return [];
+			case "get_agent_run":
+				return {
+					id: 1,
+					agent_id: 1,
+					agent_name: "Test Agent",
+					agent_icon: "🤖",
+					task: "Test task",
+					model: "sonnet",
+					project_path: "/test/path",
+					session_id: "test-session",
+					status: "completed",
+					created_at: "2023-01-01T00:00:00Z",
+				};
+			case "execute_agent":
+				return 1;
+			case "get_claude_settings":
+				return { data: {} };
+			case "get_usage_stats":
+				return {
+					total_cost: 0,
+					total_tokens: 0,
+					total_input_tokens: 0,
+					total_output_tokens: 0,
+					total_cache_creation_tokens: 0,
+					total_cache_read_tokens: 0,
+					total_sessions: 0,
+					by_model: [],
+					by_date: [],
+					by_project: [],
+				};
+			default:
+				console.warn(`Unhandled mock API call: ${command}`);
+				return null;
+		}
+	}),
+}));
+
+// Mock the API module directly for better test support
+vi.mock("@/lib/api", () => {
+	return {
+		api: {
+			listProjects: vi.fn().mockResolvedValue([]),
+			getProjectSessions: vi.fn().mockResolvedValue([]),
+			listAgents: vi.fn().mockResolvedValue([]),
+			listRunningAgentSessions: vi.fn().mockResolvedValue([]),
+			checkClaudeVersion: vi.fn().mockResolvedValue({
+				is_installed: false,
+				version: null,
+				output: "Mock version",
+			}),
+			getSessionOutput: vi.fn().mockResolvedValue(""),
+			listAgentRuns: vi.fn().mockResolvedValue([]),
+			getAgentRun: vi.fn().mockResolvedValue({
+				id: 1,
+				agent_id: 1,
+				agent_name: "Test Agent",
+				agent_icon: "🤖",
+				task: "Test task",
+				model: "sonnet",
+				project_path: "/test/path",
+				session_id: "test-session",
+				status: "completed",
+				created_at: "2023-01-01T00:00:00Z",
+			}),
+			executeAgent: vi.fn().mockResolvedValue(1),
+			getClaudeSettings: vi.fn().mockResolvedValue({}),
+			getUsageStats: vi.fn().mockResolvedValue({
+				total_cost: 0,
+				total_tokens: 0,
+				total_input_tokens: 0,
+				total_output_tokens: 0,
+				total_cache_creation_tokens: 0,
+				total_cache_read_tokens: 0,
+				total_sessions: 0,
+				by_model: [],
+				by_date: [],
+				by_project: [],
+			}),
+		},
+	};
+});
+
+// Mock the web API module
+vi.mock("@/lib/api-web", () => {
+	return {
+		api: {
+			listProjects: vi.fn().mockResolvedValue([
+				{
+					id: "test-project-1",
+					path: "/test/path",
+					sessions: ["session-1", "session-2"],
+					created_at: Date.now() - 86400000,
+				},
+			]),
+			getProjects: vi.fn().mockResolvedValue([
+				{
+					id: "test-project-1",
+					path: "/test/path",
+					sessions: ["session-1", "session-2"],
+					created_at: Date.now() - 86400000,
+				},
+			]),
+			getProjectSessions: vi.fn().mockResolvedValue([
+				{
+					id: "session-1",
+					project_id: "test-project-1",
+					project_path: "/test/path",
+					created_at: Date.now() - 3600000,
+					first_message: "Test message",
+					first_message_at: Date.now() - 3600000,
+				},
+			]),
+			getSession: vi.fn().mockResolvedValue(null),
+			createSession: vi.fn().mockResolvedValue({
+				id: "new-session",
+				project_id: "test-project-1",
+				project_path: "/test/path",
+				created_at: Date.now(),
+			}),
+			checkClaudeVersion: vi.fn().mockResolvedValue({
+				is_installed: false,
+				version: null,
+				output: "Mock version",
+			}),
+			getSessionOutput: vi.fn().mockResolvedValue(""),
+			listRunningAgentSessions: vi.fn().mockResolvedValue([]),
+			listAgents: vi.fn().mockResolvedValue([]),
+			createAgent: vi.fn().mockResolvedValue({
+				id: 1,
+				name: "Test Agent",
+				icon: "🤖",
+				description: "Test description",
+				system_prompt: "Test prompt",
+				model: "sonnet",
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+			}),
+			updateAgent: vi.fn().mockResolvedValue({
+				id: 1,
+				name: "Test Agent",
+				icon: "🤖",
+				description: "Test description",
+				system_prompt: "Test prompt",
+				model: "sonnet",
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+			}),
+			deleteAgent: vi.fn().mockResolvedValue(undefined),
+			executeAgent: vi.fn().mockResolvedValue(1),
+			listAgentRuns: vi.fn().mockResolvedValue([]),
+			readClaudeFile: vi.fn().mockResolvedValue({
+				path: "/test/path/CLAUDE.md",
+				content: "",
+				exists: false,
+			}),
+			writeClaudeFile: vi.fn().mockResolvedValue(undefined),
+		},
+	};
+});
+
+// Mock React Query hooks specifically
+vi.mock("@/hooks/use-projects", () => ({
+	useProjects: vi.fn(() => ({
+		data: [
+			{
+				id: "test-project-1",
+				path: "/test/path",
+				sessions: ["session-1", "session-2"],
+				created_at: Date.now() - 86400000,
+			},
+		],
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+		isFetching: false,
+		isError: false,
+		isSuccess: true,
+	})),
+	useProjectSessions: vi.fn(() => ({
+		data: [
+			{
+				id: "session-1",
+				project_id: "test-project-1",
+				project_path: "/test/path",
+				created_at: Date.now() - 3600000,
+				first_message: "Test message",
+				first_message_at: Date.now() - 3600000,
+			},
+		],
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+		isFetching: false,
+		isError: false,
+		isSuccess: true,
+	})),
+	useSession: vi.fn(() => ({
+		data: null,
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+		isFetching: false,
+		isError: false,
+		isSuccess: true,
+	})),
+	useCreateSession: vi.fn(() => ({
+		mutate: vi.fn(),
+		mutateAsync: vi.fn(),
+		isLoading: false,
+		isError: false,
+		isSuccess: false,
+		error: null,
+		data: null,
+		reset: vi.fn(),
+	})),
+	useOptimisticProjects: vi.fn(() => ({
+		updateProject: vi.fn(),
+	})),
 }));
 
 // Mock TRPC client
@@ -171,14 +405,66 @@ vi.mock("@/stores/sync-store", () => ({
 
 // Mock React Query
 vi.mock("@tanstack/react-query", () => ({
-	useQuery: vi.fn(),
-	useMutation: vi.fn(),
+	useQuery: vi.fn(() => ({
+		data: [],
+		isLoading: false,
+		error: null,
+		refetch: vi.fn(),
+		isFetching: false,
+		isError: false,
+		isSuccess: true,
+	})),
+	useMutation: vi.fn(() => ({
+		mutate: vi.fn(),
+		mutateAsync: vi.fn(),
+		isLoading: false,
+		isError: false,
+		isSuccess: false,
+		error: null,
+		data: null,
+		reset: vi.fn(),
+	})),
 	useQueryClient: vi.fn(() => ({
 		invalidateQueries: vi.fn(),
 		setQueryData: vi.fn(),
 		getQueryData: vi.fn(),
+		prefetchQuery: vi.fn(),
+		fetchQuery: vi.fn(),
+		getQueryCache: vi.fn(),
+		getMutationCache: vi.fn(),
+		clear: vi.fn(),
+		resetQueries: vi.fn(),
+		cancelQueries: vi.fn(),
+		removeQueries: vi.fn(),
+		refetchQueries: vi.fn(),
+		isFetching: vi.fn(),
+		isMutating: vi.fn(),
 	})),
-	QueryClient: vi.fn(),
+	QueryClient: vi.fn().mockImplementation(() => ({
+		invalidateQueries: vi.fn(),
+		setQueryData: vi.fn(),
+		getQueryData: vi.fn(),
+		prefetchQuery: vi.fn(),
+		fetchQuery: vi.fn(),
+		getQueryCache: vi.fn(),
+		getMutationCache: vi.fn(),
+		clear: vi.fn(),
+		resetQueries: vi.fn(),
+		cancelQueries: vi.fn(),
+		removeQueries: vi.fn(),
+		refetchQueries: vi.fn(),
+		isFetching: vi.fn(),
+		isMutating: vi.fn(),
+		mount: vi.fn(),
+		unmount: vi.fn(),
+		defaultOptions: {
+			queries: {
+				retry: false,
+				staleTime: 0,
+				refetchOnWindowFocus: false,
+			},
+		},
+	})),
 	QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
 		children,
 }));
@@ -193,7 +479,8 @@ vi.mock("inngest", () => ({
 
 // Mock environment variables for API services
 process.env.NEXT_PUBLIC_SERVER_URL = "http://localhost:3000";
-process.env.DATABASE_URL = "file:./test.db";
+process.env.DATABASE_URL =
+	"postgresql://neondb_owner:npg_ZLh0TfgD4iQK@ep-holy-credit-a2zuvwf4-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require";
 process.env.INNGEST_EVENT_KEY = "test-event-key";
 process.env.INNGEST_SIGNING_KEY = "test-signing-key";
 process.env.INNGEST_BASE_URL = "http://localhost:3000/api/inngest";

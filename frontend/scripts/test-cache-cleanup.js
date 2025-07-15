@@ -5,8 +5,8 @@
  * Clears various test caches and temporary files to improve performance
  */
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const cacheDirectories = [
 	".vitest/cache",
@@ -34,44 +34,31 @@ function removeDirectory(dir) {
 	try {
 		if (fs.existsSync(fullPath)) {
 			fs.rmSync(fullPath, { recursive: true, force: true });
-			console.log(`✅ Removed: ${dir}`);
 		}
-	} catch (error) {
-		console.warn(`⚠️  Failed to remove ${dir}: ${error.message}`);
-	}
+	} catch (_error) {}
 }
 
 function removeTemporaryFiles() {
 	try {
-		const { execSync } = require("child_process");
+		const { execSync } = require("node:child_process");
 		temporaryFiles.forEach((pattern) => {
 			try {
 				execSync(`find . -name "${pattern}" -type f -delete`, {
 					stdio: "ignore",
 				});
-			} catch (error) {
+			} catch (_error) {
 				// Ignore errors for files that don't exist
 			}
 		});
-		console.log("✅ Removed temporary files");
-	} catch (error) {
-		console.warn("⚠️  Failed to remove temporary files:", error.message);
-	}
+	} catch (_error) {}
 }
 
 function main() {
-	console.log("🧹 Starting test cache cleanup...\n");
-
 	// Remove cache directories
 	cacheDirectories.forEach(removeDirectory);
 
 	// Remove temporary files
 	removeTemporaryFiles();
-
-	console.log("\n✨ Test cache cleanup completed!");
-	console.log(
-		"💡 Run this script before important test runs for optimal performance.",
-	);
 }
 
 if (require.main === module) {

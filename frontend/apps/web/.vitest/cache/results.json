@@ -1,0 +1,1 @@
+{"version":"2.1.9","results":[[":src/app/projects/__tests__/page.test.tsx",{"duration":27.54245800000001,"failed":true}],[":src/lib/__tests__/api.test.ts",{"duration":16.90454200000022,"failed":true}],[":src/app/agents/__tests__/page.nextjs.test.tsx",{"duration":26.782999999999447,"failed":true}],[":src/app/projects/__tests__/page.nextjs.test.tsx",{"duration":0,"failed":true}]]}

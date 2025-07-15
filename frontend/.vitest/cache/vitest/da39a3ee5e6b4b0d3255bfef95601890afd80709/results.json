@@ -1,0 +1,61 @@
+{
+	"version": "3.2.4",
+	"results": [
+		[
+			":apps/web/src/__tests__/components/BaseAgent.test.ts",
+			{ "duration": 270.6538329999994, "failed": true }
+		],
+		[
+			":apps/web/src/__tests__/integration/inngest-api.test.ts",
+			{ "duration": 783.6990839999999, "failed": true }
+		],
+		[
+			":apps/web/src/__tests__/integration/store-query-sync.test.tsx",
+			{ "duration": 217.98562499999935, "failed": true }
+		],
+		[
+			":apps/web/src/__tests__/integration/agent-dashboard-integration.test.tsx",
+			{ "duration": 864.9372080000003, "failed": true }
+		],
+		[
+			":apps/web/src/__tests__/integration/api-authentication.test.ts",
+			{ "duration": 0, "failed": true }
+		],
+		[
+			":apps/web/src/__tests__/hooks/use-optimistic-mutations.test.tsx",
+			{ "duration": 1173.844125, "failed": true }
+		],
+		[
+			":apps/web/src/__tests__/stores/auth-store.test.ts",
+			{ "duration": 37.703833999999915, "failed": true }
+		],
+		[
+			":apps/web/src/__tests__/integration/session-management.test.ts",
+			{ "duration": 0, "failed": true }
+		],
+		[
+			":packages/ui-kit/tests/accessibility.test.tsx",
+			{ "duration": 287.21166700000003, "failed": true }
+		],
+		[
+			":apps/web/src/__tests__/stores/ui-store.test.ts",
+			{ "duration": 28.792666000000054, "failed": true }
+		],
+		[
+			":packages/ui-kit/tests/Input.test.tsx",
+			{ "duration": 288.4644159999998, "failed": true }
+		],
+		[
+			":packages/ui-kit/tests/Button.test.tsx",
+			{ "duration": 159.14600000000019, "failed": true }
+		],
+		[
+			":apps/web/src/__tests__/integration/simple-integration.test.ts",
+			{ "duration": 0, "failed": true }
+		],
+		[
+			":packages/ui-kit/tests/test-helper.test.ts",
+			{ "duration": 4.188207999999918, "failed": false }
+		]
+	]
+}

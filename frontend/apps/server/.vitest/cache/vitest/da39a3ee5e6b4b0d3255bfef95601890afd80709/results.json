@@ -1,0 +1,8 @@
+{
+	"version": "3.2.4",
+	"results": [
+		[":src/db/tests/repositories.test.ts", { "duration": 0, "failed": true }],
+		[":src/db/tests/sync.test.ts", { "duration": 0, "failed": true }],
+		[":src/db/tests/setup.test.ts", { "duration": 0, "failed": true }]
+	]
+}

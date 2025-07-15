@@ -32,28 +32,28 @@
 
 ## Slice 2: Component Migration and UI Parity
 
-- [ ] 5. Migrate Topbar component and global providers to Next.js layout
+- [x] 5. Migrate Topbar component and global providers to Next.js layout
   - Copy Topbar component from src/components/Topbar.tsx to frontend/apps/web/src/components/
   - Update app/layout.tsx to include Topbar and global providers (OutputCacheProvider, etc.)
   - Update import paths to work with Next.js structure
   - Replace Vite environment variables with Next.js equivalents
   - _Requirements: 2.1, 2.2, 5.3_
 
-- [ ] 6. Migrate core UI components from Vite app
+- [x] 6. Migrate core UI components from Vite app
   - Copy essential components from src/components/ to frontend/apps/web/src/components/
   - Focus on: ProjectList, SessionList, RunningClaudeSessions, Settings, CCAgents, ClaudeCodeSession
   - Update import paths and fix any Vite-specific code (import.meta.env, asset imports)
   - Ensure shadcn/ui components render correctly in Next.js
   - _Requirements: 2.1, 2.3_
 
-- [ ] 7. Migrate API and utility libraries
+- [x] 7. Migrate API and utility libraries
   - Copy src/lib/api.ts to frontend/apps/web/src/lib/ and update for Next.js
   - Copy other essential utilities from src/lib/ (outputCache, utils, etc.)
   - Update src/types/ and ensure TypeScript types are compatible
   - Replace Vite-specific asset handling with Next.js conventions
   - _Requirements: 2.1, 2.3_
 
-- [ ] 8. Implement functional CC Projects page
+- [x] 8. Implement functional CC Projects page
   - Update app/projects/page.tsx to include full project management functionality
   - Integrate ProjectList, SessionList, and RunningClaudeSessions components
   - Implement project selection, session browsing, and new session creation

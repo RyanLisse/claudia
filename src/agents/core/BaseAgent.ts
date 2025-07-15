@@ -112,8 +112,11 @@ export abstract class BaseAgent extends EventEmitter implements IAgent, IAgentLi
     this._currentTasks.set(task.id, task);
     this._status = AgentStatus.BUSY;
     
-    // Execute task asynchronously
-    this.executeTaskAsync(task);
+    // Execute task asynchronously but don't wait for completion
+    // The task will be removed from _currentTasks when execution completes
+    this.executeTaskAsync(task).catch(error => {
+      this.emit('agent.error', { agentId: this.id, error });
+    });
     
     return true;
   }

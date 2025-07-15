@@ -9,14 +9,6 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     // Fix for external dependency issues
-    deps: {
-      optimizer: {
-        web: {
-          include: ['vitest-canvas-mock'],
-          exclude: ['wa-sqlite', 'electric-sql', 'bun:test']
-        }
-      }
-    },
     server: {
       deps: {
         external: ['wa-sqlite', 'electric-sql']
@@ -40,7 +32,8 @@ export default defineConfig({
     deps: {
       optimizer: {
         web: {
-          include: ['vitest-canvas-mock']
+          include: ['vitest-canvas-mock'],
+          exclude: ['wa-sqlite', 'electric-sql', 'bun:test']
         }
       }
     },

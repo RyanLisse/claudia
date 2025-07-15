@@ -1,0 +1,5 @@
+=== TEST SUMMARY ===
+Tests Run: 126 tests
+Failed Tests: 37 total failures
+Pass Rate: 84%
+Coverage: Needs analysis

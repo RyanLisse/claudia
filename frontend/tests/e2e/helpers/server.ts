@@ -15,7 +15,7 @@ export async function waitForServer(
 		try {
 			await page.goto(url);
 			return true;
-		} catch (error) {
+		} catch (_error) {
 			// Server not ready yet, wait and retry
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}

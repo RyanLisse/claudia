@@ -4,18 +4,24 @@
 	"private": true,
 	"scripts": {
 		"dev": "next dev --turbopack --port=3001",
-		"build": "next build",
+		"build": "next build && npm run validate-build",
+		"build:clean": "rm -rf out && next build",
+		"build:analyze": "ANALYZE=true next build",
 		"start": "next start",
 		"lint": "next lint",
+		"lint:fix": "next lint --fix",
 		"test": "vitest --config ./vitest.config.ts",
 		"test:watch": "vitest --config ./vitest.config.ts --watch",
 		"test:run": "vitest --config ./vitest.config.ts run",
+		"test:coverage": "vitest --config ./vitest.config.ts --coverage",
+		"validate-build": "node scripts/validate-build.js",
 		"preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-		"deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-		"upload": "opennextjs-cloudflare build && opennextjs-cloudflare upload",
+		"deploy": "npm run build && opennextjs-cloudflare deploy",
+		"upload": "npm run build && opennextjs-cloudflare upload",
 		"cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
 		"storybook": "storybook dev -p 6006",
-		"build-storybook": "storybook build"
+		"build-storybook": "storybook build",
+		"postbuild": "npm run validate-build"
 	},
 	"dependencies": {
 		"@electric-sql/pglite-sync": "^0.3.7",

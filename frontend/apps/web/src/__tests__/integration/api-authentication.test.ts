@@ -18,10 +18,12 @@ describe("API Authentication Integration", () => {
 			expect(process.env.INNGEST_EVENT_KEY).toBe("test-event-key");
 			expect(process.env.INNGEST_SIGNING_KEY).toBe("test-signing-key");
 			expect(process.env.INNGEST_BASE_URL).toBe(
-				"http://localhost:3000/api/inngest",
+				"http://localhost:3001/api/inngest",
 			);
-			expect(process.env.NEXT_PUBLIC_SERVER_URL).toBe("http://localhost:3000");
-			expect(process.env.DATABASE_URL).toBe("file:./test.db");
+			expect(process.env.NEXT_PUBLIC_SERVER_URL).toBe("http://localhost:3001");
+			expect(process.env.DATABASE_URL).toBe(
+				"postgresql://neondb_owner:npg_ZLh0TfgD4iQK@ep-holy-credit-a2zuvwf4-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require",
+			);
 			expect(process.env.NODE_ENV).toBe("test");
 		});
 
@@ -289,7 +291,7 @@ describe("API Authentication Integration", () => {
 	describe("Real-time Updates", () => {
 		it("should handle WebSocket connections", () => {
 			expect(mocks.mockWs.readyState).toBe(1); // OPEN
-			expect(mocks.mockWs.url).toBe("ws://localhost:3000/ws");
+			expect(mocks.mockWs.url).toBe("ws://localhost:3001/ws");
 		});
 
 		it("should receive real-time task updates", () => {
@@ -386,7 +388,7 @@ describe("API Authentication Integration", () => {
 			const results = await Promise.all(promises);
 
 			expect(results).toHaveLength(100);
-			results.forEach((result, i) => {
+			results.forEach((result, _i) => {
 				expect(result.id).toMatch(/^evt_\d+$/);
 			});
 		});

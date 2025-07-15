@@ -24,6 +24,9 @@ class MockBaseAgent {
 		this.type = config.type;
 		this.capabilities = config.capabilities;
 		this.maxConcurrentTasks = config.maxConcurrentTasks || 1;
+		// Ensure agent starts in idle state
+		this.status = "idle";
+		this.currentTasks = [];
 	}
 
 	private validateConfig(config: any): void {
@@ -60,36 +63,28 @@ class MockBaseAgent {
 		try {
 			const result = await this.executeTaskImplementation(task);
 			const executionTime = Date.now() - startTime;
-			
-			// Update metrics
-			this.metrics.totalTasksExecuted++;
-			this.metrics.lastExecutionTime = Date.now();
-			if (this.metrics.averageExecutionTime === 0) {
-				this.metrics.averageExecutionTime = executionTime;
-			} else {
-				this.metrics.averageExecutionTime = 
-					(this.metrics.averageExecutionTime * (this.metrics.totalTasksExecuted - 1) + executionTime) / 
-					this.metrics.totalTasksExecuted;
-			}
-			
+
+			// Always update metrics regardless of spying
+			this.updateMetrics(executionTime);
+
 			this.currentTasks = this.currentTasks.filter((id) => id !== task.id);
 			this.updateStatus();
-			
+
 			// Cleanup resources for memory-intensive tasks
 			if (task.context?.memoryIntensive) {
 				await this.cleanupResources();
 			}
-			
+
 			return result;
 		} catch (error) {
 			this.currentTasks = this.currentTasks.filter((id) => id !== task.id);
 			this.updateStatus();
-			
+
 			// Return error object instead of throwing
 			return {
 				success: false,
 				error: error instanceof Error ? error.message : "Unknown error",
-				result: undefined
+				result: undefined,
 			};
 		}
 	}
@@ -141,11 +136,28 @@ class MockBaseAgent {
 		}
 	}
 
+	private updateMetrics(executionTime: number): void {
+		this.metrics.totalTasksExecuted++;
+		this.metrics.lastExecutionTime = Date.now();
+		if (this.metrics.averageExecutionTime === 0) {
+			this.metrics.averageExecutionTime = executionTime;
+		} else {
+			this.metrics.averageExecutionTime =
+				(this.metrics.averageExecutionTime *
+					(this.metrics.totalTasksExecuted - 1) +
+					executionTime) /
+				this.metrics.totalTasksExecuted;
+		}
+	}
+
 	public getExecutionMetrics(): any {
 		return { ...this.metrics };
 	}
 
-	public async sendMessage(targetAgentId: string, message: any): Promise<any> {
+	public async sendMessage(
+		_targetAgentId: string,
+		_message: any,
+	): Promise<any> {
 		return { success: true, messageId: "test-msg-123" };
 	}
 
@@ -160,7 +172,7 @@ class MockBaseAgent {
 		};
 	}
 
-	public async coordinateWithAgents(task: Task): Promise<any> {
+	public async coordinateWithAgents(_task: Task): Promise<any> {
 		return {
 			success: true,
 			collaborationPlan: { myRole: "primary-executor", dependencies: [] },
@@ -174,7 +186,7 @@ class MockBaseAgent {
 		};
 	}
 
-	public async adaptCapabilities(performanceData: any): Promise<any> {
+	public async adaptCapabilities(_performanceData: any): Promise<any> {
 		return {
 			capabilitiesUpdated: true,
 			newCapabilities: [],
@@ -252,6 +264,16 @@ describe("BaseAgent - TDD Implementation", () => {
 
 	afterEach(() => {
 		vi.clearAllMocks();
+		// Reset agent state to clean state
+		agent.status = "idle";
+		agent.currentTasks = [];
+		// Reset metrics
+		(agent as any).metrics = {
+			totalTasksExecuted: 0,
+			averageExecutionTime: 0,
+			lastExecutionTime: 0,
+			successRate: 1.0,
+		};
 	});
 
 	describe("Agent Initialization", () => {
@@ -394,15 +416,16 @@ describe("BaseAgent - TDD Implementation", () => {
 
 		it("should track task execution metrics", async () => {
 			vi.spyOn(agent, "executeTaskImplementation").mockImplementation(
-				() => new Promise((resolve) => {
-					setTimeout(() => {
-						resolve({
-							success: true,
-							result: "Task completed",
-							metrics: { executionTime: 1500 },
-						});
-					}, 10);
-				})
+				() =>
+					new Promise((resolve) => {
+						setTimeout(() => {
+							resolve({
+								success: true,
+								result: "Task completed",
+								metrics: { executionTime: 1500 },
+							});
+						}, 10);
+					}),
 			);
 
 			const startTime = Date.now();

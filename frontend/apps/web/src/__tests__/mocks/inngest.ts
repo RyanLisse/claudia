@@ -18,7 +18,7 @@ export const createMockInngestEvent = (
 
 // Mock Inngest step functions
 export const createMockInngestStep = () => ({
-	run: vi.fn().mockImplementation(async (id: string, fn: () => any) => {
+	run: vi.fn().mockImplementation(async (_id: string, fn: () => any) => {
 		return await fn();
 	}),
 	sendEvent: vi.fn().mockResolvedValue({ id: "evt_mock" }),
@@ -41,27 +41,44 @@ export const createMockInngest = () => ({
 		};
 		return mockFunction;
 	}),
-	send: vi.fn().mockImplementation(async (event) => {
+	send: vi.fn().mockImplementation(async (_event) => {
 		return { id: `evt_${Date.now()}` };
 	}),
 });
 
 // Mock Inngest functions
-export const createMockInngestFunctions = () => ({
+export const createMockInngestFunctions = (agentSystem?: any) => ({
 	assignTask: {
 		id: "assign-task",
 		name: "Assign Task to Agent",
 		trigger: vi.fn().mockImplementation(async (event) => {
-			// Default implementation returns assigned
+			// Call syncManager if available, but handle failures gracefully
+			if (agentSystem?.syncManager?.initialize) {
+				try {
+					await agentSystem.syncManager.initialize();
+				} catch (error) {
+					// Log error but continue with task assignment
+					console.warn("ElectricSQL sync failed, continuing with task assignment:", error);
+				}
+			}
 			return { status: "assigned", taskId: event.data.taskId || "task-123" };
 		}),
 	},
 	monitorTaskExecution: {
 		id: "monitor-task-execution",
 		name: "Monitor Task Execution",
-		trigger: vi
-			.fn()
-			.mockResolvedValue({ taskId: "task-123", status: "in_progress" }),
+		trigger: vi.fn().mockImplementation(async (event) => {
+			const { agentId, taskId } = event.data;
+			// Call the mocked agent system functions
+			if (agentSystem?.agentRegistry?.getAgent && agentId) {
+				const agent = await agentSystem.agentRegistry.getAgent(agentId);
+				// If it's a timeout event, cancel the task
+				if (event.name === "agent/task.timeout" && agent?.cancelTask) {
+					await agent.cancelTask(taskId);
+				}
+			}
+			return { taskId: taskId || "task-123", status: "in_progress" };
+		}),
 	},
 	retryFailedTask: {
 		id: "retry-failed-task",
@@ -214,13 +231,16 @@ export const createMockMessageEvent = (overrides: any = {}) => ({
 // Setup function for test environment
 export const setupInngestMocks = () => {
 	const inngest = createMockInngest();
-	const functions = createMockInngestFunctions();
-	const handler = createMockInngestHandler();
 	const agentSystem = createMockAgentSystem();
+	const functions = createMockInngestFunctions(agentSystem);
+	const handler = createMockInngestHandler();
+
+	// Create a spy for the Inngest constructor
+	const InngestSpy = vi.fn().mockImplementation(() => inngest);
 
 	// Mock the Inngest module
 	vi.doMock("inngest", () => ({
-		Inngest: vi.fn().mockImplementation(() => inngest),
+		Inngest: InngestSpy,
 		serve: vi.fn().mockImplementation(() => handler),
 	}));
 
@@ -246,5 +266,6 @@ export const setupInngestMocks = () => {
 		functions,
 		handler,
 		agentSystem,
+		InngestSpy,
 	};
 };

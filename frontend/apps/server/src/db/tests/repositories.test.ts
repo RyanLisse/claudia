@@ -1,22 +1,31 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import {
-	agentRepository,
-	memoryRepository,
-	messageRepository,
-	projectRepository,
-	sessionRepository,
-	userRepository,
-} from "../repositories";
-import {
 	cleanupTestDatabase,
 	clearAllTables,
+	createTestRepositories,
 	setupTestDatabase,
 	testDataFactory,
-} from "./setup";
+} from "./test-setup";
 
 describe("Database Repositories", () => {
+	let userRepository: any;
+	let projectRepository: any;
+	let agentRepository: any;
+	let sessionRepository: any;
+	let messageRepository: any;
+	let memoryRepository: any;
+
 	beforeAll(async () => {
 		await setupTestDatabase();
+
+		// Initialize test repositories with test database
+		const testRepos = createTestRepositories();
+		userRepository = testRepos.userRepository;
+		projectRepository = testRepos.projectRepository;
+		agentRepository = testRepos.agentRepository;
+		sessionRepository = testRepos.sessionRepository;
+		messageRepository = testRepos.messageRepository;
+		memoryRepository = testRepos.memoryRepository;
 	});
 
 	afterAll(async () => {

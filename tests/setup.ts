@@ -47,6 +47,32 @@ vi.mock('@tauri-apps/plugin-opener', () => ({
 // Mock API responses for testing
 const mockApiResponse = { message: 'Test API response' }
 
+// Mock Inngest client to prevent API calls during tests
+vi.mock('inngest', () => ({
+  Inngest: vi.fn().mockImplementation(() => ({
+    send: vi.fn().mockResolvedValue({ id: 'mock-event-id' }),
+    createFunction: vi.fn().mockReturnValue({
+      trigger: vi.fn().mockResolvedValue({ status: 'triggered' })
+    })
+  }))
+}))
+
+// Mock the Inngest client module specifically for agent tests
+vi.mock('../src/agents/inngest/client.js', () => ({
+  inngest: {
+    send: vi.fn().mockResolvedValue({ id: 'mock-event-id' }),
+    createFunction: vi.fn().mockReturnValue({
+      trigger: vi.fn().mockResolvedValue({ status: 'triggered' })
+    })
+  }
+}))
+
+// Set up environment variables for testing
+process.env.INNGEST_EVENT_KEY = 'test-event-key'
+process.env.INNGEST_SIGNING_KEY = 'test-signing-key'
+process.env.INNGEST_BASE_URL = 'http://localhost:3000/api/inngest'
+process.env.NODE_ENV = 'test'
+
 // Setup test environment
 beforeAll(() => {
   // Setup global test environment

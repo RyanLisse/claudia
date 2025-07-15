@@ -1,34 +1,65 @@
 {
-	"extends": "../../tsconfig.base.json",
-	"compilerOptions": {
-		"target": "ES2022",
-		"lib": ["DOM", "DOM.Iterable", "ES2022"],
-		"allowJs": true,
-		"noEmit": true,
-		"module": "ESNext",
-		"moduleResolution": "bundler",
-		"jsx": "preserve",
-		"plugins": [
-			{
-				"name": "next"
-			}
-		],
-		"baseUrl": "./",
-		"paths": {
-			"@/*": ["./src/*"],
-			"@/components/*": ["./src/components/*"],
-			"@/lib/*": ["./src/lib/*"],
-			"@/hooks/*": ["./src/hooks/*"],
-			"@/stores/*": ["./src/stores/*"],
-			"@/utils/*": ["./src/utils/*"]
-		},
-		"types": ["@types/node", "@types/react", "@types/react-dom"]
-	},
-	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-	"exclude": ["node_modules", ".next", "out", "build"],
-	"references": [
-		{
-			"path": "../server"
-		}
-	]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
+    ],
+    "allowJs": true,
+    "noEmit": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "preserve",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": "./",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@/components/*": [
+        "./src/components/*"
+      ],
+      "@/lib/*": [
+        "./src/lib/*"
+      ],
+      "@/hooks/*": [
+        "./src/hooks/*"
+      ],
+      "@/stores/*": [
+        "./src/stores/*"
+      ],
+      "@/utils/*": [
+        "./src/utils/*"
+      ]
+    },
+    "types": [
+      "@types/node",
+      "@types/react",
+      "@types/react-dom"
+    ]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    "out/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next",
+    "out",
+    "build"
+  ],
+  "references": [
+    {
+      "path": "../server"
+    }
+  ]
 }

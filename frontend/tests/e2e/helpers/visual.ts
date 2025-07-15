@@ -127,7 +127,7 @@ export async function checkColorContrast(
 ): Promise<void> {
 	const element = page.locator(selector);
 
-	const styles = await element.evaluate((el) => {
+	const _styles = await element.evaluate((el) => {
 		const computed = window.getComputedStyle(el);
 		return {
 			color: computed.color,
@@ -135,9 +135,6 @@ export async function checkColorContrast(
 			fontSize: computed.fontSize,
 		};
 	});
-
-	// This is a simplified check - in a real scenario, you'd use a proper color contrast library
-	console.log(`Color contrast check for ${selector}:`, styles);
 }
 
 export async function checkResponsiveDesign(
@@ -205,7 +202,5 @@ export async function measurePerformance(page: Page): Promise<{
 				paint.find((p) => p.name === "first-contentful-paint")?.startTime || 0,
 		};
 	});
-
-	console.log("Performance metrics:", metrics);
 	return metrics;
 }

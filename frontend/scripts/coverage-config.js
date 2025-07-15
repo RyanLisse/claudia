@@ -10,9 +10,9 @@
  * - Manages coverage thresholds
  */
 
-const fs = require("fs");
-const path = require("path");
-const { execSync } = require("child_process");
+const fs = require("node:fs");
+const path = require("node:path");
+const { execSync } = require("node:child_process");
 
 class CoverageManager {
 	constructor() {
@@ -34,9 +34,6 @@ class CoverageManager {
 	 */
 	getCoverageReports() {
 		if (!this.checkCoverageDir()) {
-			console.log(
-				"❌ No coverage directory found. Run tests with coverage first.",
-			);
 			return null;
 		}
 
@@ -62,8 +59,6 @@ class CoverageManager {
 	 * Generate coverage report
 	 */
 	async generateCoverage() {
-		console.log("📊 Generating coverage report...");
-
 		try {
 			// Run tests with coverage
 			execSync("npm run test:coverage", {
@@ -72,20 +67,14 @@ class CoverageManager {
 				timeout: 60000, // 1 minute timeout
 			});
 
-			console.log("✅ Coverage report generated successfully!");
-
 			// Show available reports
 			const reports = this.getCoverageReports();
 			if (reports) {
-				console.log("\n📋 Available coverage reports:");
-				Object.entries(reports).forEach(([type, filePath]) => {
-					console.log(`  ${type.toUpperCase()}: ${filePath}`);
-				});
+				Object.entries(reports).forEach(([_type, _filePath]) => {});
 			}
 
 			return true;
-		} catch (error) {
-			console.error("❌ Failed to generate coverage report:", error.message);
+		} catch (_error) {
 			return false;
 		}
 	}
@@ -104,17 +93,13 @@ class CoverageManager {
 		}
 
 		if (!fs.existsSync(reportPath)) {
-			console.log(
-				"❌ No coverage summary found. Run tests with coverage first.",
-			);
 			return null;
 		}
 
 		try {
 			const data = JSON.parse(fs.readFileSync(reportPath, "utf8"));
 			return data;
-		} catch (error) {
-			console.error("❌ Failed to parse coverage summary:", error.message);
+		} catch (_error) {
 			return null;
 		}
 	}
@@ -129,23 +114,8 @@ class CoverageManager {
 			return;
 		}
 
-		console.log("\n📊 Coverage Statistics:");
-		console.log("========================");
-
 		if (summary.total) {
 			const { total } = summary;
-			console.log(
-				`Lines:      ${total.lines.pct}% (${total.lines.covered}/${total.lines.total})`,
-			);
-			console.log(
-				`Functions:  ${total.functions.pct}% (${total.functions.covered}/${total.functions.total})`,
-			);
-			console.log(
-				`Branches:   ${total.branches.pct}% (${total.branches.covered}/${total.branches.total})`,
-			);
-			console.log(
-				`Statements: ${total.statements.pct}% (${total.statements.covered}/${total.statements.total})`,
-			);
 		}
 
 		// Show per-file coverage (top 10 files)
@@ -155,11 +125,8 @@ class CoverageManager {
 			.slice(0, 10);
 
 		if (fileEntries.length > 0) {
-			console.log("\n🔍 Top Files by Coverage:");
-			console.log("=========================");
-			fileEntries.forEach(([filePath, stats]) => {
-				const shortPath = filePath.replace(this.rootDir, "");
-				console.log(`${shortPath}: ${stats.lines.pct}%`);
+			fileEntries.forEach(([filePath, _stats]) => {
+				const _shortPath = filePath.replace(this.rootDir, "");
 			});
 		}
 	}
@@ -168,8 +135,6 @@ class CoverageManager {
 	 * Validate coverage configuration
 	 */
 	validateConfig() {
-		console.log("🔍 Validating coverage configuration...");
-
 		const issues = [];
 
 		// Check if vitest config exists
@@ -203,11 +168,9 @@ class CoverageManager {
 		}
 
 		if (issues.length === 0) {
-			console.log("✅ Coverage configuration is valid!");
 			return true;
 		}
-		console.log("❌ Coverage configuration issues found:");
-		issues.forEach((issue) => console.log(`  - ${issue}`));
+		issues.forEach((_issue) => {});
 		return false;
 	}
 
@@ -215,8 +178,6 @@ class CoverageManager {
 	 * Set coverage thresholds
 	 */
 	setThresholds(thresholds) {
-		console.log("⚙️  Setting coverage thresholds...");
-
 		try {
 			let configContent = fs.readFileSync(this.vitestConfigPath, "utf8");
 
@@ -244,11 +205,9 @@ class CoverageManager {
 			);
 
 			fs.writeFileSync(this.vitestConfigPath, configContent);
-			console.log("✅ Coverage thresholds updated successfully!");
 
 			return true;
-		} catch (error) {
-			console.error("❌ Failed to update coverage thresholds:", error.message);
+		} catch (_error) {
 			return false;
 		}
 	}
@@ -260,9 +219,6 @@ class CoverageManager {
 		const htmlReport = path.join(this.coverageDir, "index.html");
 
 		if (!fs.existsSync(htmlReport)) {
-			console.log(
-				"❌ HTML coverage report not found. Run tests with coverage first.",
-			);
 			return false;
 		}
 
@@ -275,10 +231,8 @@ class CoverageManager {
 						: "xdg-open";
 
 			execSync(`${opener} ${htmlReport}`, { stdio: "ignore" });
-			console.log("🌐 Coverage report opened in browser!");
 			return true;
-		} catch (error) {
-			console.error("❌ Failed to open coverage report:", error.message);
+		} catch (_error) {
 			return false;
 		}
 	}
@@ -287,19 +241,15 @@ class CoverageManager {
 	 * Run all coverage checks
 	 */
 	async runAll() {
-		console.log("🚀 Running comprehensive coverage check...\n");
-
 		// Validate configuration
 		const isValid = this.validateConfig();
 		if (!isValid) {
-			console.log("\n❌ Please fix configuration issues before proceeding.");
 			return false;
 		}
 
 		// Generate coverage
 		const generated = await this.generateCoverage();
 		if (!generated) {
-			console.log("\n❌ Failed to generate coverage. Check test failures.");
 			return false;
 		}
 
@@ -309,13 +259,8 @@ class CoverageManager {
 		// Show available reports
 		const reports = this.getCoverageReports();
 		if (reports) {
-			console.log("\n📋 Coverage reports available:");
-			Object.entries(reports).forEach(([type, filePath]) => {
-				console.log(`  ${type.toUpperCase()}: ${filePath}`);
-			});
+			Object.entries(reports).forEach(([_type, _filePath]) => {});
 		}
-
-		console.log("\n✅ Coverage check completed successfully!");
 		return true;
 	}
 }
@@ -343,7 +288,6 @@ if (require.main === module) {
 			manager.setThresholds(thresholds);
 			break;
 		}
-		case "all":
 		default:
 			manager.runAll();
 			break;

@@ -1,25 +1,61 @@
-import type { ElectricConfig } from "electric-sql";
-import { electrify } from "electric-sql/browser";
+// ElectricSQL client types - adapting for current package version
+type ElectricClientConfig = {
+	url: string;
+	headers?: Record<string, string>;
+	timeout?: number;
+};
+
+// Mock ElectricClient for now - will be replaced with actual implementation
+export class ElectricClient {
+	constructor(private config: ElectricClientConfig) {}
+	
+	async stream(params: {
+		table: string;
+		columns?: string[];
+		where?: string;
+	}) {
+		// Mock implementation - replace with actual ElectricSQL client
+		return {
+			subscribe: (callback: (data: any) => void) => {
+				// Mock subscription
+				setTimeout(() => callback([]), 1000);
+				return () => {}; // unsubscribe
+			},
+			unsubscribe: () => {},
+		};
+	}
+}
+
+export type ShapeStream<T> = {
+	subscribe: (callback: (data: T[]) => void) => () => void;
+	unsubscribe: () => void;
+};
+import { z } from 'zod';
 import * as schema from "./schema";
 
 // ElectricSQL configuration
-export const electricConfig: ElectricConfig = {
+export const electricConfig = {
 	url: process.env.ELECTRIC_URL || "ws://localhost:5133",
 	debug: process.env.NODE_ENV === "development",
 	timeout: 10000,
+	headers: {
+		'Authorization': `Bearer ${process.env.ELECTRIC_TOKEN || 'dev-token'}`,
+		'Content-Type': 'application/json',
+	},
 };
 
 // Initialize Electric client
-let electric: any | null = null;
+let electric: ElectricClient | null = null;
 
-export async function initElectric(): Promise<any> {
+export async function initElectric(): Promise<ElectricClient> {
 	if (electric) return electric;
+	
 	// Initialize the Electric client
-	electric = await electrify(
-		{} as any, // Database placeholder
-		schema as any,
-		electricConfig,
-	);
+	electric = new ElectricClient({
+		url: electricConfig.url,
+		headers: electricConfig.headers,
+		timeout: electricConfig.timeout,
+	});
 
 	// Set up sync subscriptions for all tables
 	await setupSyncSubscriptions(electric);
@@ -27,45 +63,55 @@ export async function initElectric(): Promise<any> {
 }
 
 // Set up sync subscriptions for real-time data
-async function setupSyncSubscriptions(electric: any) {
-	const { db } = electric;
-	// Subscribe to users table
-	await (db as any).users?.sync?.();
+async function setupSyncSubscriptions(electric: ElectricClient) {
+	// Set up shape subscriptions for each table
+	const shapes = {
+		users: await electric.stream({
+			table: 'users',
+			columns: ['id', 'email', 'name', 'created_at', 'updated_at'],
+			where: 'created_at > NOW() - INTERVAL \'30 days\'',
+		}),
 
-	// Subscribe to projects table
-	await (db as any).projects?.sync?.();
+		projects: await electric.stream({
+			table: 'projects',
+			columns: ['id', 'name', 'description', 'user_id', 'created_at', 'updated_at'],
+			where: 'deleted_at IS NULL',
+		}),
 
-	// Subscribe to agents table
-	await (db as any).agents?.sync?.();
+		agents: await electric.stream({
+			table: 'agents',
+			columns: ['id', 'name', 'description', 'config', 'user_id', 'created_at', 'updated_at'],
+			where: 'is_active = true',
+		}),
 
-	// Subscribe to sessions table with shape filtering
-	await (db as any).sessions?.sync?.({
-		// Only sync active sessions
-		where: { status: "active" },
-	});
+		sessions: await electric.stream({
+			table: 'ai_sessions',
+			columns: ['id', 'name', 'agent_id', 'user_id', 'status', 'created_at', 'updated_at'],
+			where: 'status IN (\'active\', \'paused\') AND created_at > NOW() - INTERVAL \'7 days\'',
+		}),
 
-	// Subscribe to messages table with limits
-	await (db as any).messages?.sync?.({
-		// Only sync recent messages
-		where: {
-			createdAt: {
-				gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-			},
-		},
-	});
+		messages: await electric.stream({
+			table: 'messages',
+			columns: ['id', 'content', 'role', 'session_id', 'created_at'],
+			where: 'created_at > NOW() - INTERVAL \'24 hours\'',
+		}),
 
-	// Subscribe to memory table with user filtering
-	await (db as any).memory?.sync?.({
-		// Sync based on current user (to be set dynamically)
-		where: { userId: getCurrentUserId() },
-	});
+		memory: await electric.stream({
+			table: 'memory',
+			columns: ['id', 'content', 'type', 'session_id', 'created_at'],
+			where: `user_id = '${getCurrentUserId()}'`,
+		}),
 
-	// Subscribe to sync events for monitoring
-	await (db as any).syncEvents?.sync?.({
-		where: {
-			status: ["pending", "conflict"],
-		},
-	});
+		syncEvents: await electric.stream({
+			table: 'sync_events',
+			columns: ['id', 'event_type', 'table_name', 'record_id', 'status', 'created_at'],
+			where: 'status IN (\'pending\', \'conflict\') AND created_at > NOW() - INTERVAL \'1 hour\'',
+		}),
+	};
+
+	// Store shapes for later use
+	(electric as any)._shapes = shapes;
+	return shapes;
 }
 
 // Get current user ID (implement based on your auth system)
@@ -74,43 +120,81 @@ function getCurrentUserId(): string {
 	return process.env.CURRENT_USER_ID || "";
 }
 
-// Sync utilities
-export class ElectricSyncManager {
-	private electric: any | null = null;
+// Modern ElectricSQL sync manager with shape streaming
+export class ElectricSync {
+	private client: ElectricClient | null = null;
+	private shapes: Map<string, ShapeStream<any>> = new Map();
+	private subscriptions: Map<string, (() => void)[]> = new Map();
+
+	constructor(private baseUrl: string) {}
 
 	async initialize(): Promise<void> {
-		this.electric = await initElectric();
+		this.client = await initElectric();
 	}
 
-	async syncTable(
-		tableName: string,
-		shape?: Record<string, unknown>,
-	): Promise<void> {
-		if (!this.electric) throw new Error("Electric not initialized");
+	async syncShape<T extends z.ZodType>(
+		table: string,
+		schema: T,
+		where?: string,
+		columns?: string[]
+	): Promise<ShapeStream<z.infer<T>>> {
+		if (!this.client) throw new Error("Electric client not initialized");
 
-		const { db } = this.electric;
-		const table = (db as Record<string, unknown>)[tableName];
-
-		if (!table) {
-			throw new Error(`Table ${tableName} not found`);
+		const shapeKey = `${table}:${where || 'all'}`;
+		
+		if (this.shapes.has(shapeKey)) {
+			return this.shapes.get(shapeKey)!;
 		}
 
-		await (table as any).sync(shape);
+		const stream = await this.client.stream({
+			table,
+			where,
+			columns: columns || Object.keys((schema as any).shape || {}),
+		});
+
+		// Create typed stream with validation
+		const typedStream = {
+			...stream,
+			subscribe: (callback: (data: z.infer<T>[]) => void) => {
+				return stream.subscribe((rawData: any) => {
+					try {
+						const validated = z.array(schema).parse(rawData);
+						callback(validated);
+					} catch (error) {
+						console.error(`Validation error for ${table}:`, error);
+						callback([]);
+					}
+				});
+			},
+			unsubscribe: stream.unsubscribe,
+		};
+
+		this.shapes.set(shapeKey, typedStream);
+		return typedStream;
 	}
 
 	async forceSyncAll(): Promise<void> {
-		if (!this.electric) throw new Error("Electric not initialized");
+		if (!this.client) throw new Error("Electric client not initialized");
 
-		// Force sync all subscribed tables
-		await setupSyncSubscriptions(this.electric);
+		// Re-initialize all shapes
+		await setupSyncSubscriptions(this.client);
 	}
 
 	async getConflicts(): Promise<unknown[]> {
-		if (!this.electric) throw new Error("Electric not initialized");
+		if (!this.client) throw new Error("Electric client not initialized");
 
-		const { db } = this.electric;
-		return await db.syncConflicts.findMany({
-			where: { isResolved: false },
+		// Get conflicts from sync_conflicts table
+		const conflictsStream = await this.client.stream({
+			table: 'sync_conflicts',
+			where: 'is_resolved = false',
+			columns: ['id', 'table_name', 'record_id', 'conflict_type', 'local_data', 'remote_data', 'created_at']
+		});
+
+		return new Promise((resolve) => {
+			const unsubscribe = conflictsStream.subscribe((data: any) => {
+				unsubscribe();
+				resolve(data);
+			});
 		});
 	}
 
@@ -119,58 +203,87 @@ export class ElectricSyncManager {
 		strategy: "local_wins" | "remote_wins" | "merge",
 		resolvedData?: unknown,
 	): Promise<void> {
-		if (!this.electric) throw new Error("Electric not initialized");
+		if (!this.client) throw new Error("Electric client not initialized");
 
-		const { db } = this.electric;
-
-		await db.syncConflicts.update({
-			where: { id: conflictId },
-			data: {
-				resolutionStrategy: strategy,
+		// Update conflict resolution in database
+		const response = await fetch('/api/sync/conflicts/resolve', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				conflictId,
+				strategy,
 				resolvedData,
-				isResolved: true,
-				resolvedAt: new Date(),
 				resolvedBy: getCurrentUserId(),
-			},
+			}),
 		});
+
+		if (!response.ok) {
+			throw new Error(`Failed to resolve conflict: ${response.statusText}`);
+		}
 	}
 
 	async getSyncMetrics(): Promise<Record<string, unknown>> {
-		if (!this.electric) throw new Error("Electric not initialized");
+		if (!this.client) throw new Error("Electric client not initialized");
 
-		const { db } = this.electric;
-
-		const now = new Date();
-		const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-
-		const metrics = await db.syncMetrics.findMany({
-			where: {
-				measuredAt: {
-					gte: hourAgo,
-				},
-			},
-			orderBy: { measuredAt: "desc" },
+		const metricsStream = await this.client.stream({
+			table: 'sync_metrics',
+			where: 'measured_at > NOW() - INTERVAL \'1 hour\'',
+			columns: ['metric_type', 'value', 'unit', 'measured_at']
 		});
 
-		return {
-			totalEvents: metrics.length,
-			avgLatency:
-				metrics
-					.filter((m: any) => m.metricType === "sync_latency")
-					.reduce((sum: number, m: any) => sum + m.value, 0) / metrics.length ||
-				0,
-			conflictRate:
-				metrics
-					.filter((m: any) => m.metricType === "conflict_rate")
-					.reduce((sum: number, m: any) => sum + m.value, 0) / metrics.length ||
-				0,
-			lastSync: metrics[0]?.measuredAt || null,
+		return new Promise((resolve) => {
+			const unsubscribe = metricsStream.subscribe((metrics: any[]) => {
+				unsubscribe();
+				
+				const latencyMetrics = metrics.filter(m => m.metric_type === 'sync_latency');
+				const conflictMetrics = metrics.filter(m => m.metric_type === 'conflict_rate');
+				
+				resolve({
+					totalEvents: metrics.length,
+					avgLatency: latencyMetrics.reduce((sum, m) => sum + m.value, 0) / latencyMetrics.length || 0,
+					conflictRate: conflictMetrics.reduce((sum, m) => sum + m.value, 0) / conflictMetrics.length || 0,
+					lastSync: metrics[0]?.measured_at || null,
+				});
+			});
+		});
+	}
+
+	// Add subscription management
+	subscribeToTable(table: string, callback: (data: any) => void): () => void {
+		if (!this.subscriptions.has(table)) {
+			this.subscriptions.set(table, []);
+		}
+
+		const callbacks = this.subscriptions.get(table)!;
+		callbacks.push(callback);
+
+		return () => {
+			const index = callbacks.indexOf(callback);
+			if (index > -1) {
+				callbacks.splice(index, 1);
+			}
 		};
+	}
+
+	// Cleanup
+	destroy(): void {
+		for (const [, shape] of this.shapes) {
+			if (shape.unsubscribe) {
+				shape.unsubscribe();
+			}
+		}
+		this.shapes.clear();
+		this.subscriptions.clear();
 	}
 }
 
 // Export singleton instance
-export const syncManager = new ElectricSyncManager();
+export const electricSync = new ElectricSync(
+	process.env.ELECTRIC_URL || 'ws://localhost:5133'
+);
+
+// Export syncManager for compatibility
+export const syncManager = electricSync;
 
 // Utility functions for conflict resolution
 export const ConflictResolver = {

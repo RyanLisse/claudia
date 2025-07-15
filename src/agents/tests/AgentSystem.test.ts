@@ -7,24 +7,27 @@ import type {
   AgentId,
   TaskId,
   Task,
+  AgentConfig
+} from '../types/agent.ts';
+import {
   TaskStatus,
   AgentStatus,
   Priority,
-  AgentCapability,
-  AgentConfig
-} from '../types/agent.js';
-import { BaseAgent } from '../core/BaseAgent.js';
-import { AgentRegistry } from '../core/AgentRegistry.js';
-import { TaskQueue } from '../core/TaskQueue.js';
-import { MessageBroker } from '../communication/MessageBroker.js';
-import { AgentMonitor } from '../monitoring/AgentMonitor.js';
-import { AgentOrchestrator } from '../core/AgentOrchestrator.js';
-import { CodeAnalysisAgent } from '../examples/CodeAnalysisAgent.js';
+  AgentCapability
+} from '../types/agent.ts';
+import { BaseAgent } from '../core/BaseAgent.ts';
+import { AgentRegistry } from '../core/AgentRegistry.ts';
+import { TaskQueue } from '../core/TaskQueue.ts';
+import { MessageBroker } from '../communication/MessageBroker.ts';
+import { AgentMonitor } from '../monitoring/AgentMonitor.ts';
+import { AgentOrchestrator } from '../core/AgentOrchestrator.ts';
+import { CodeAnalysisAgent } from '../examples/CodeAnalysisAgent.ts';
 
 // Mock agent implementation for testing
 class MockAgent extends BaseAgent {
   private shouldFail = false;
   private executionDelay = 0;
+  public capabilities: AgentCapability[];
 
   constructor(agentId: AgentId, capabilities: AgentCapability[] = [AgentCapability.CODE_ANALYSIS]) {
     const config: AgentConfig = {
@@ -36,6 +39,7 @@ class MockAgent extends BaseAgent {
       retryAttempts: 1,
     };
     super(config);
+    this.capabilities = capabilities;
   }
 
   setShouldFail(shouldFail: boolean): void {
@@ -144,10 +148,17 @@ describe('AI Agent System', () => {
         timeoutMs: 30000,
       };
 
+      // Set execution delay to ensure task stays in queue for testing
+      agent.setExecutionDelay(100);
+
       const assigned = await agent.assignTask(task);
       expect(assigned).toBe(true);
       expect(agent.getCurrentTasks()).toHaveLength(1);
       expect(agent.getStatus()).toBe(AgentStatus.BUSY);
+      
+      // Wait for task execution to complete
+      await new Promise(resolve => setTimeout(resolve, 150));
+      expect(agent.getCurrentTasks()).toHaveLength(0);
     });
 
     it('should reject tasks it cannot handle', async () => {
@@ -523,9 +534,14 @@ describe('AI Agent System', () => {
       const agent = new MockAgent('integration-agent', [AgentCapability.CODE_ANALYSIS]);
       
       await agent.start();
-      await registry.register(agent);
       await monitor.startMonitoring(agent.id);
       messageBroker.registerAgent(agent.id);
+
+      // Initialize the orchestrator first
+      await orchestrator.initialize();
+      
+      // Register agent with orchestrator's registry
+      await orchestrator.registerAgent(agent);
 
       // Submit a task through the orchestrator
       const taskId = await orchestrator.submitTask({
@@ -535,6 +551,7 @@ describe('AI Agent System', () => {
         requiredCapabilities: [AgentCapability.CODE_ANALYSIS],
         maxRetries: 2,
         timeoutMs: 30000,
+        retryCount: 0,
       });
 
       expect(taskId).toBeDefined();
@@ -544,6 +561,9 @@ describe('AI Agent System', () => {
 
       const status = await orchestrator.getStatus();
       expect(status.agentCount).toBe(1);
+      
+      // Shutdown orchestrator after test
+      await orchestrator.shutdown();
     });
   });
 });

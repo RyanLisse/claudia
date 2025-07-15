@@ -11,13 +11,13 @@ import { ProjectsPage } from "./pages/ProjectsPage";
  */
 
 test.describe("Projects", () => {
-	let loginPage: LoginPage;
-	let dashboardPage: DashboardPage;
+	let _loginPage: LoginPage;
+	let _dashboardPage: DashboardPage;
 	let projectsPage: ProjectsPage;
 
 	test.beforeEach(async ({ page }) => {
-		loginPage = new LoginPage(page);
-		dashboardPage = new DashboardPage(page);
+		_loginPage = new LoginPage(page);
+		_dashboardPage = new DashboardPage(page);
 		projectsPage = new ProjectsPage(page);
 
 		// Clear and seed database

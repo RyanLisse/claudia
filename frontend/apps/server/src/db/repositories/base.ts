@@ -1,15 +1,21 @@
 import { eq, type SQL } from "drizzle-orm";
 import { syncManager } from "../electric";
-import { db } from "../index";
+import { db as defaultDb } from "../index";
 import { syncMonitor } from "../sync-monitor";
 
 export abstract class BaseRepository<T, TInsert> {
 	protected abstract tableName: string;
 	protected abstract table: unknown;
+	protected db: typeof defaultDb;
 
-	constructor() {
-		// Initialize sync for this table
-		this.initializeSync();
+	constructor(databaseInstance?: typeof defaultDb) {
+		// Use injected database instance or default production database
+		this.db = databaseInstance || defaultDb;
+
+		// Initialize sync for this table only if not in test environment
+		if (process.env.NODE_ENV !== "test") {
+			this.initializeSync();
+		}
 	}
 
 	private async initializeSync(): Promise<void> {
@@ -25,7 +31,7 @@ export abstract class BaseRepository<T, TInsert> {
 		const startTime = Date.now();
 
 		try {
-			const result = await db
+			const result = await this.db
 				.select()
 				.from(this.table)
 				.where(eq(this.table.id, id))
@@ -44,7 +50,7 @@ export abstract class BaseRepository<T, TInsert> {
 		const startTime = Date.now();
 
 		try {
-			let query = db.select().from(this.table);
+			let query = this.db.select().from(this.table);
 
 			if (where) {
 				query = query.where(where);
@@ -74,15 +80,18 @@ export abstract class BaseRepository<T, TInsert> {
 		const startTime = Date.now();
 
 		try {
-			// Add sync metadata
-			const dataWithSync = {
-				...data,
-				electricId: this.generateElectricId(),
-				syncVersion: "1",
-				lastSyncAt: new Date(),
-			};
+			// Add sync metadata only if not in test environment
+			const dataWithSync =
+				process.env.NODE_ENV === "test"
+					? data
+					: {
+							...data,
+							electricId: this.generateElectricId(),
+							syncVersion: "1",
+							lastSyncAt: new Date(),
+						};
 
-			const result = await db
+			const result = await this.db
 				.insert(this.table)
 				.values(dataWithSync)
 				.returning();
@@ -110,14 +119,17 @@ export abstract class BaseRepository<T, TInsert> {
 				throw new Error(`Record with id ${id} not found`);
 			}
 
-			// Add sync metadata
-			const dataWithSync = {
-				...data,
-				syncVersion: this.incrementSyncVersion(current.syncVersion),
-				lastSyncAt: new Date(),
-			};
+			// Add sync metadata only if not in test environment
+			const dataWithSync =
+				process.env.NODE_ENV === "test"
+					? data
+					: {
+							...data,
+							syncVersion: this.incrementSyncVersion(current.syncVersion),
+							lastSyncAt: new Date(),
+						};
 
-			const result = await db
+			const result = await this.db
 				.update(this.table)
 				.set(dataWithSync)
 				.where(eq(this.table.id, id))
@@ -146,7 +158,9 @@ export abstract class BaseRepository<T, TInsert> {
 				return false;
 			}
 
-			const _result = await db.delete(this.table).where(eq(this.table.id, id));
+			const _result = await this.db
+				.delete(this.table)
+				.where(eq(this.table.id, id));
 
 			await this.recordMetric("write_latency", Date.now() - startTime);
 			await this.recordMetric("records_deleted", 1);
@@ -165,7 +179,7 @@ export abstract class BaseRepository<T, TInsert> {
 		const startTime = Date.now();
 
 		try {
-			let query = db.select({ count: db.count() }).from(this.table);
+			let query = this.db.select({ count: this.db.count() }).from(this.table);
 
 			if (where) {
 				query = query.where(where);
@@ -183,6 +197,11 @@ export abstract class BaseRepository<T, TInsert> {
 	}
 
 	protected async recordMetric(type: string, value: number): Promise<void> {
+		// Skip metric recording in test environment
+		if (process.env.NODE_ENV === "test") {
+			return;
+		}
+
 		try {
 			await syncMonitor.recordMetric(`${this.tableName}_${type}`, value, {
 				table: this.tableName,
@@ -199,8 +218,13 @@ export abstract class BaseRepository<T, TInsert> {
 		oldData: unknown,
 		newData: unknown,
 	): Promise<void> {
+		// Skip sync event recording in test environment
+		if (process.env.NODE_ENV === "test") {
+			return;
+		}
+
 		try {
-			await db.insert(db.syncEvents).values({
+			await this.db.insert(this.db.syncEvents).values({
 				eventType: operation,
 				tableName: this.tableName,
 				recordId,

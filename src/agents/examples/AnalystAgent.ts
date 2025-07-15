@@ -9,7 +9,8 @@ import type {
   TaskResult
 } from '../types/agent.js';
 import {
-  AgentCapability
+  AgentCapability,
+  TaskStatus
 } from '../types/agent.js';
 
 export interface AnalystAgentConfig extends AgentConfig {
@@ -174,10 +175,12 @@ export class AnalystAgent extends BaseAgent {
 
       return {
         taskId: task.id,
-        success: true,
+        agentId: this.id,
+        status: TaskStatus.COMPLETED,
         result,
+        startedAt: task.createdAt,
         completedAt: new Date(),
-        executionTimeMs: Date.now() - task.createdAt.getTime(),
+        durationMs: Date.now() - task.createdAt.getTime(),
         metadata: {
           analysisType: payload.analysisType,
           dataFormat: payload.dataFormat,
@@ -188,10 +191,12 @@ export class AnalystAgent extends BaseAgent {
     } catch (error) {
       return {
         taskId: task.id,
-        success: false,
+        agentId: this.id,
+        status: TaskStatus.FAILED,
         error: error instanceof Error ? error.message : 'Unknown error',
+        startedAt: task.createdAt,
         completedAt: new Date(),
-        executionTimeMs: Date.now() - task.createdAt.getTime(),
+        durationMs: Date.now() - task.createdAt.getTime(),
         metadata: {
           analysisType: payload.analysisType,
           dataFormat: payload.dataFormat
@@ -359,7 +364,7 @@ export class AnalystAgent extends BaseAgent {
     return patterns;
   }
 
-  private identifyAdvancedPatterns(processedData: any, parameters?: any): any[] {
+  private identifyAdvancedPatterns(processedData: any, _parameters?: any): any[] {
     const patterns = this.identifyPatterns(processedData);
     
     // Add more sophisticated pattern recognition
@@ -397,7 +402,7 @@ export class AnalystAgent extends BaseAgent {
     const mean = data.reduce((a: number, b: number) => a + b, 0) / data.length;
     const std = Math.sqrt(data.reduce((acc: number, val: number) => acc + Math.pow(val - mean, 2), 0) / data.length);
     
-    const anomalies = [];
+    const anomalies: any[] = [];
     const threshold = 2.5; // Z-score threshold
     
     data.forEach((value: number, index: number) => {
@@ -416,7 +421,7 @@ export class AnalystAgent extends BaseAgent {
     return anomalies;
   }
 
-  private findCorrelations(processedData: any): any[] {
+  private findCorrelations(_processedData: any): any[] {
     // Simulate correlation analysis
     return [
       {
@@ -434,7 +439,7 @@ export class AnalystAgent extends BaseAgent {
     ];
   }
 
-  private performAdvancedStatistics(processedData: any, parameters?: any): any {
+  private performAdvancedStatistics(processedData: any, _parameters?: any): any {
     const stats = this.calculateDescriptiveStatistics(processedData);
     
     return {
@@ -459,7 +464,7 @@ export class AnalystAgent extends BaseAgent {
     return this.findCorrelations(processedData);
   }
 
-  private buildPredictiveModel(processedData: any, parameters?: any): any {
+  private buildPredictiveModel(processedData: any, _parameters?: any): any {
     // Simulate model building
     return {
       type: 'linear_regression',
@@ -482,7 +487,7 @@ export class AnalystAgent extends BaseAgent {
     };
   }
 
-  private generatePredictions(model: any, processedData: any): any {
+  private generatePredictions(_model: any, processedData: any): any {
     return {
       trends: [
         {
@@ -496,9 +501,9 @@ export class AnalystAgent extends BaseAgent {
     };
   }
 
-  private analyzeTrends(processedData: any, parameters?: any): any[] {
+  private analyzeTrends(processedData: any, _parameters?: any): any[] {
     const data = processedData.processed;
-    const trends = [];
+    const trends: any[] = [];
     
     // Short-term trend (last 10 points)
     const shortTerm = data.slice(-10);
@@ -541,11 +546,11 @@ export class AnalystAgent extends BaseAgent {
 
   private generateInsights(findings: any): any {
     const insights = {
-      keyFindings: [],
-      implications: [],
-      recommendations: [],
-      risks: [],
-      opportunities: []
+      keyFindings: [] as string[],
+      implications: [] as string[],
+      recommendations: [] as string[],
+      risks: [] as string[],
+      opportunities: [] as string[]
     };
     
     // Generate insights based on findings
@@ -614,7 +619,7 @@ export class AnalystAgent extends BaseAgent {
   }
 
   // Helper methods
-  private detectCyclicalPattern(data: number[]): boolean {
+  private detectCyclicalPattern(_data: number[]): boolean {
     // Simple cyclical detection - in real implementation would use FFT
     return Math.random() > 0.6; // 40% chance of detecting cyclical pattern
   }
@@ -673,7 +678,7 @@ export class AnalystAgent extends BaseAgent {
   }
 
   updateConfidenceThreshold(threshold: number): void {
-    this.confidenceThreshold = Math.max(0, Math.min(1, threshold));
+    this._confidenceThreshold = Math.max(0, Math.min(1, threshold));
   }
 }
 
@@ -684,10 +689,9 @@ export function createAnalystAgent(config: Partial<AnalystAgentConfig> = {}): An
     name: config.name || 'Analyst Agent',
     description: 'Specialized agent for data analysis, pattern recognition, and insights generation',
     capabilities: [
-      AgentCapability.DATA_ANALYSIS,
-      AgentCapability.PATTERN_RECOGNITION,
-      AgentCapability.STATISTICAL_ANALYSIS,
-      AgentCapability.VISUALIZATION
+      AgentCapability.CODE_ANALYSIS,
+      AgentCapability.TESTING,
+      AgentCapability.PERFORMANCE_OPTIMIZATION
     ],
     maxConcurrentTasks: 2,
     analysisTypes: ['descriptive', 'predictive', 'prescriptive', 'diagnostic'],
@@ -695,6 +699,8 @@ export function createAnalystAgent(config: Partial<AnalystAgentConfig> = {}): An
     visualizationTools: ['charts', 'graphs', 'heatmaps', 'dashboards'],
     statisticalMethods: ['regression', 'correlation', 'clustering', 'classification'],
     confidenceThreshold: 0.8,
+    timeoutMs: 30000,
+    retryAttempts: 3,
     ...config
   };
 

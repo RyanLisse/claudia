@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, type Project, type Session } from "@/lib/api";
+import { api, type Project, type Session } from "@/lib/api-web";
 
 // Projects query
 export function useProjects() {

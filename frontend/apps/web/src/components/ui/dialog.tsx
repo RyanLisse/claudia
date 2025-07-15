@@ -2,7 +2,7 @@
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
-import type * as React from "react";
+import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -46,30 +46,61 @@ function DialogOverlay({
 	);
 }
 
+interface DialogContentProps extends React.ComponentProps<typeof DialogPrimitive.Content> {
+	showCloseButton?: boolean;
+	closeOnEscape?: boolean;
+	closeOnOverlayClick?: boolean;
+}
+
 function DialogContent({
 	className,
 	children,
+	showCloseButton = true,
+	closeOnEscape = true,
+	closeOnOverlayClick = true,
 	...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: DialogContentProps) {
+	const [isOpen, setIsOpen] = React.useState(false);
+
+	React.useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape" && closeOnEscape) {
+				// Let Radix handle the escape key
+				return;
+			}
+		};
+
+		if (closeOnEscape) {
+			document.addEventListener("keydown", handleKeyDown);
+			return () => document.removeEventListener("keydown", handleKeyDown);
+		}
+	}, [closeOnEscape]);
+
 	return (
 		<DialogPortal>
-			<DialogOverlay />
+			<DialogOverlay 
+				onClick={closeOnOverlayClick ? undefined : (e) => e.preventDefault()}
+			/>
 			<DialogPrimitive.Content
 				data-slot="dialog-content"
 				className={cn(
-					"data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 -translate-x-1/2 -translate-y-1/2 fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100%-2rem)] w-full max-w-[calc(100%-2rem)] gap-4 overflow-y-auto rounded-xl border bg-background p-6 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in sm:max-w-100",
+					"data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] -translate-x-1/2 -translate-y-1/2 fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100%-2rem)] w-full max-w-[calc(100%-2rem)] gap-4 overflow-y-auto rounded-xl border bg-background p-6 shadow-lg duration-200 data-[state=closed]:animate-out data-[state=open]:animate-in sm:max-w-100",
 					className,
 				)}
+				onEscapeKeyDown={closeOnEscape ? undefined : (e) => e.preventDefault()}
+				onPointerDownOutside={closeOnOverlayClick ? undefined : (e) => e.preventDefault()}
 				{...props}
 			>
 				{children}
-				<DialogPrimitive.Close className="group absolute top-3 right-3 flex size-7 items-center justify-center rounded outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none">
-					<XIcon
-						size={16}
-						className="opacity-60 transition-opacity group-hover:opacity-100"
-					/>
-					<span className="sr-only">Close</span>
-				</DialogPrimitive.Close>
+				{showCloseButton && (
+					<DialogPrimitive.Close className="group absolute top-3 right-3 flex size-7 items-center justify-center rounded outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+						<XIcon
+							size={16}
+							className="opacity-60 transition-opacity group-hover:opacity-100"
+						/>
+						<span className="sr-only">Close</span>
+					</DialogPrimitive.Close>
+				)}
 			</DialogPrimitive.Content>
 		</DialogPortal>
 	);

@@ -1,10 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-	createMockSession,
-	createTestDatabase,
-	mockTauriInvoke,
-} from "../utils/test-helpers";
+import { createMockSession, createTestDatabase } from "../utils/test-helpers";
 
 // Mock @tauri-apps/api/core at the top level
 vi.mock("@tauri-apps/api/core", () => ({

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Loader2, Bot, FolderCode } from "lucide-react";
-import { api, type Project, type Session, type ClaudeMdFile } from "@/lib/api";
+import { api, type Project, type Session, type ClaudeMdFile } from "./frontend/apps/web/src/lib/api";
 import { OutputCacheProvider } from "@/lib/outputCache";
 import { TabProvider } from "@/contexts/TabContext";
 import { Button } from "@/components/ui/button";

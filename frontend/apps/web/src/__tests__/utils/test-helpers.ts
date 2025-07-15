@@ -4,12 +4,52 @@ import { vi } from "vitest";
 
 // Mock providers for testing
 export const createMockProvider = (props: any = {}) => {
-	return ({ children }: { children: React.ReactNode }) =>
-		React.createElement(
-			"div",
-			{ "data-testid": "mock-provider", ...props },
-			children,
+	return ({ children }: { children: React.ReactNode }) => {
+		// Create a mock QueryClient
+		const mockQueryClient = {
+			invalidateQueries: vi.fn(),
+			setQueryData: vi.fn(),
+			getQueryData: vi.fn(),
+			prefetchQuery: vi.fn(),
+			fetchQuery: vi.fn(),
+			getQueryCache: vi.fn(),
+			getMutationCache: vi.fn(),
+			clear: vi.fn(),
+			resetQueries: vi.fn(),
+			cancelQueries: vi.fn(),
+			removeQueries: vi.fn(),
+			refetchQueries: vi.fn(),
+			isFetching: vi.fn(),
+			isMutating: vi.fn(),
+			mount: vi.fn(),
+			unmount: vi.fn(),
+			defaultOptions: {
+				queries: {
+					retry: false,
+					staleTime: 0,
+					refetchOnWindowFocus: false,
+				},
+			},
+		};
+
+		// Create a mock QueryClientProvider
+		const MockQueryClientProvider = ({ children }: { children: React.ReactNode }) => 
+			React.createElement(
+				"div",
+				{ "data-testid": "mock-query-provider" },
+				children,
+			);
+
+		return React.createElement(
+			MockQueryClientProvider,
+			{},
+			React.createElement(
+				"div",
+				{ "data-testid": "mock-provider", ...props },
+				children,
+			),
 		);
+	};
 };
 
 // Custom render function with providers
@@ -176,7 +216,8 @@ export const setupApiTestEnvironment = () => {
 	process.env.INNGEST_SIGNING_KEY = "test-signing-key";
 	process.env.INNGEST_BASE_URL = "http://localhost:3000/api/inngest";
 	process.env.NEXT_PUBLIC_SERVER_URL = "http://localhost:3000";
-	process.env.DATABASE_URL = "file:./test.db";
+	process.env.DATABASE_URL =
+		"postgresql://neondb_owner:npg_ZLh0TfgD4iQK@ep-holy-credit-a2zuvwf4-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require";
 	process.env.NODE_ENV = "test";
 
 	// Mock all external services
@@ -199,7 +240,7 @@ export const getByTestId = (container: Element, testId: string) => {
 };
 
 // Error boundary testing
-export const triggerError = (component: any, error: Error) => {
+export const triggerError = (_component: any, error: Error) => {
 	const spy = vi.spyOn(console, "error").mockImplementation(() => {});
 	try {
 		throw error;

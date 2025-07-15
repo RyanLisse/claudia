@@ -6,9 +6,96 @@ import { afterEach, vi } from "vitest";
 // Make React available globally for JSX
 global.React = React;
 
-// Cleanup DOM after each test
+// Comprehensive DOM cleanup after each test
 afterEach(() => {
+	// Standard React Testing Library cleanup
 	cleanup();
+	
+	// Aggressive DOM cleanup to prevent test isolation issues
+	if (typeof document !== 'undefined') {
+		// Remove all elements from document.body
+		document.body.innerHTML = '';
+		
+		// Clear any remaining elements from document.head (except meta tags)
+		const headElements = document.head.querySelectorAll('style, link[rel="stylesheet"], script');
+		headElements.forEach(element => {
+			if (element.parentNode) {
+				element.parentNode.removeChild(element);
+			}
+		});
+		
+		// Reset document title
+		document.title = '';
+		
+		// Clear any custom attributes from html and body
+		document.documentElement.removeAttribute('data-testid');
+		document.body.removeAttribute('data-testid');
+		
+		// Clear any inline styles
+		document.documentElement.removeAttribute('style');
+		document.body.removeAttribute('style');
+		
+		// Reset any modified classes
+		document.documentElement.className = '';
+		document.body.className = '';
+		
+		// Clear any event listeners by cloning and replacing elements
+		const newBody = document.body.cloneNode(false);
+		document.body.parentNode?.replaceChild(newBody, document.body);
+		
+		// Clear any remaining role attributes or aria attributes
+		const allElements = document.querySelectorAll('*');
+		allElements.forEach(element => {
+			// Remove all aria-* attributes
+			Array.from(element.attributes).forEach(attr => {
+				if (attr.name.startsWith('aria-') || attr.name === 'role') {
+					element.removeAttribute(attr.name);
+				}
+			});
+		});
+		
+		// Force DOM mutation observer cleanup
+		if (typeof window !== 'undefined' && window.MutationObserver) {
+			// Create a temporary observer to trigger cleanup
+			const observer = new MutationObserver(() => {});
+			observer.observe(document.body, { childList: true, subtree: true });
+			observer.disconnect();
+		}
+	}
+	
+	// Clear any global state or caches
+	if (typeof window !== 'undefined') {
+		// Clear localStorage and sessionStorage
+		try {
+			window.localStorage.clear();
+			window.sessionStorage.clear();
+		} catch (e) {
+			// Ignore errors if storage is not available
+		}
+		
+		// Clear any custom properties on window
+		Object.keys(window).forEach(key => {
+			if (key.startsWith('__test_') || key.startsWith('__mock_')) {
+				delete (window as any)[key];
+			}
+		});
+		
+		// Clear any timers that might be running
+		const highestTimeoutId = setTimeout(() => {}, 0);
+		for (let i = 0; i < highestTimeoutId; i++) {
+			clearTimeout(i);
+		}
+		
+		const highestIntervalId = setInterval(() => {}, 1000);
+		for (let i = 0; i < highestIntervalId; i++) {
+			clearInterval(i);
+		}
+	}
+	
+	// Force garbage collection of any remaining references
+	if (typeof global !== 'undefined' && global.gc) {
+		global.gc();
+	}
 });
 
 // Mock Next.js router
@@ -116,9 +203,48 @@ global.WebSocket = vi.fn().mockImplementation(() => ({
 	readyState: 1,
 }));
 
-// Mock Tauri API
+// Mock Tauri API with comprehensive mocking
 vi.mock("@tauri-apps/api/core", () => ({
-	invoke: vi.fn(),
+	invoke: vi.fn().mockImplementation((command: string, args?: any) => {
+		// Provide realistic mock responses based on command
+		switch (command) {
+			case "list_projects":
+				return Promise.resolve([]);
+			case "get_project_sessions":
+				return Promise.resolve([]);
+			case "check_claude_version":
+				return Promise.resolve({ is_installed: false, version: null, output: "Mock version" });
+			case "get_session_output":
+				return Promise.resolve("");
+			case "list_running_agent_sessions":
+				return Promise.resolve([]);
+			case "read_claude_file":
+				return Promise.resolve(null);
+			case "write_claude_file":
+				return Promise.resolve(null);
+			default:
+				return Promise.resolve(null);
+		}
+	}),
+}));
+
+// Mock Tauri dialog API
+vi.mock("@tauri-apps/api/dialog", () => ({
+	open: vi.fn(),
+	save: vi.fn(),
+	message: vi.fn(),
+	ask: vi.fn(),
+	confirm: vi.fn(),
+}));
+
+// Mock Tauri filesystem API
+vi.mock("@tauri-apps/api/fs", () => ({
+	readTextFile: vi.fn(),
+	writeTextFile: vi.fn(),
+	exists: vi.fn(),
+	createDir: vi.fn(),
+	removeFile: vi.fn(),
+	removeDir: vi.fn(),
 }));
 
 // Mock Inngest client for testing
@@ -136,7 +262,8 @@ process.env.INNGEST_BASE_URL = "http://localhost:3000/api/inngest";
 
 // Mock environment variables for API services
 process.env.NEXT_PUBLIC_SERVER_URL = "http://localhost:3000";
-process.env.DATABASE_URL = "file:./test.db";
+process.env.DATABASE_URL =
+	"postgresql://neondb_owner:npg_ZLh0TfgD4iQK@ep-holy-credit-a2zuvwf4-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require";
 process.env.AGENT_MAX_AGENTS = "10";
 process.env.AGENT_TASK_QUEUE_SIZE = "100";
 process.env.AGENT_HEARTBEAT_INTERVAL_MS = "30000";

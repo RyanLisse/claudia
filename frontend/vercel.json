@@ -1,7 +1,7 @@
 {
-  "buildCommand": "turbo run build --filter=web",
-  "installCommand": "bun install",
-  "outputDirectory": "apps/web/.next",
-  "ignoreCommand": "git diff HEAD^ HEAD --quiet .",
-  "framework": null
+	"buildCommand": "turbo run build --filter=web",
+	"installCommand": "bun install",
+	"outputDirectory": "apps/web/.next",
+	"ignoreCommand": "git diff HEAD^ HEAD --quiet .",
+	"framework": null
 }

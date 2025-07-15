@@ -89,6 +89,27 @@
 	"javascript": {
 		"formatter": {
 			"quoteStyle": "double"
-		}
+		},
+		"globals": [
+			"describe",
+			"it",
+			"expect",
+			"beforeEach",
+			"afterEach",
+			"beforeAll",
+			"afterAll",
+			"test",
+			"jest",
+			"vi",
+			"vitest",
+			"process",
+			"console",
+			"TextEncoder",
+			"TextDecoder",
+			"Buffer",
+			"global",
+			"__dirname",
+			"__filename"
+		]
 	}
 }

@@ -1,6 +1,10 @@
 import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
+import dotenv from "dotenv";
 import { defineConfig } from "vitest/config";
+
+// Load test environment variables
+dotenv.config({ path: "./apps/web/.env.test" });
 
 export default defineConfig({
 	plugins: [react()],
@@ -48,8 +52,9 @@ export default defineConfig({
 		environment: "jsdom",
 		setupFiles: ["./test-setup.ts"],
 		env: {
-			// Load test environment variables
-			...require("dotenv").config({ path: "./apps/web/.env.test" }).parsed,
+			// Test environment variables are already loaded above
+			NODE_ENV: "test",
+			...process.env,
 		},
 		coverage: {
 			provider: "v8",
@@ -114,16 +119,16 @@ export default defineConfig({
 			],
 			thresholds: {
 				global: {
-					branches: 50,
-					functions: 50,
-					lines: 50,
-					statements: 50,
+					branches: 80,
+					functions: 80,
+					lines: 80,
+					statements: 80,
 				},
 				perFile: {
-					branches: 40,
-					functions: 40,
-					lines: 40,
-					statements: 40,
+					branches: 70,
+					functions: 70,
+					lines: 70,
+					statements: 70,
 				},
 			},
 		},
@@ -157,6 +162,8 @@ export default defineConfig({
 		alias: {
 			"@": resolve(__dirname, "./apps/web/src"),
 			"@/server": resolve(__dirname, "./apps/server/src"),
+			"@db": resolve(__dirname, "./apps/server/src/db"),
+			"@ui": resolve(__dirname, "./packages/ui-kit/src"),
 		},
 	},
 });

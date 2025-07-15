@@ -47,8 +47,8 @@ const MockAgentDashboard = ({ agents, swarmMetrics, onAgentAction }: any) => (
             ))}
           </div>
           <div className="agent-metrics">
-            <div>Tasks: {agent.tasksCompleted || 0}</div>
-            <div>Success Rate: {agent.successRate || 0}%</div>
+            <div>Tasks: {agent.performance?.tasksCompleted || agent.tasksCompleted || 0}</div>
+            <div>Success Rate: {agent.performance?.successRate || agent.successRate || 0}%</div>
             <div>Last Active: {agent.lastActive || 'Never'}</div>
           </div>
           {agent.performance && (

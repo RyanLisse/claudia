@@ -2,18 +2,20 @@
  * Example implementation of a Code Analysis Agent
  */
 
-import { BaseAgent } from '../core/BaseAgent.js';
+import { BaseAgent } from '../core/BaseAgent.ts';
 import type {
   AgentId,
   TaskId,
   Task,
   TaskResult,
-  TaskStatus,
   Message,
-  AgentConfig,
+  AgentConfig
+} from '../types/agent.ts';
+import {
+  TaskStatus,
   AgentCapability
-} from '../types/agent.js';
-import { messageBroker } from '../communication/MessageBroker.js';
+} from '../types/agent.ts';
+import { messageBroker } from '../communication/MessageBroker.ts';
 
 export interface CodeAnalysisTask {
   type: 'code_analysis';
@@ -187,7 +189,7 @@ export class CodeAnalysisAgent extends BaseAgent {
   private async analyzeComplexity(code: string, language: string): Promise<CodeAnalysisResult['complexity']> {
     // Simulate complexity analysis
     const lines = code.split('\n').filter(line => line.trim().length > 0);
-    const functions = this.countFunctions(code, language);
+    const _functions = this.countFunctions(code, language);
     const branches = this.countBranches(code);
     
     return {
@@ -197,8 +199,8 @@ export class CodeAnalysisAgent extends BaseAgent {
     };
   }
 
-  private async analyzeSecurityIssues(code: string, language: string): Promise<NonNullable<CodeAnalysisResult['security']>> {
-    const vulnerabilities = [];
+  private async analyzeSecurityIssues(code: string, _language: string): Promise<NonNullable<CodeAnalysisResult['security']>> {
+    const vulnerabilities: any[] = [];
     const lines = code.split('\n');
 
     // Simple pattern-based security checks (in real implementation, use proper AST analysis)
@@ -224,8 +226,8 @@ export class CodeAnalysisAgent extends BaseAgent {
     return { vulnerabilities };
   }
 
-  private async analyzePerformanceIssues(code: string, language: string): Promise<NonNullable<CodeAnalysisResult['performance']>> {
-    const issues = [];
+  private async analyzePerformanceIssues(code: string, _language: string): Promise<NonNullable<CodeAnalysisResult['performance']>> {
+    const issues: any[] = [];
     const lines = code.split('\n');
 
     // Simple performance checks
@@ -251,8 +253,8 @@ export class CodeAnalysisAgent extends BaseAgent {
     return { issues };
   }
 
-  private async analyzeStyleIssues(code: string, language: string): Promise<NonNullable<CodeAnalysisResult['style']>> {
-    const violations = [];
+  private async analyzeStyleIssues(code: string, _language: string): Promise<NonNullable<CodeAnalysisResult['style']>> {
+    const violations: any[] = [];
     const lines = code.split('\n');
 
     // Simple style checks

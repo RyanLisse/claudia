@@ -180,8 +180,8 @@ export class BaseAgent {
 	}
 
 	public async sendMessage(
-		targetAgentId: string,
-		message: AgentMessage,
+		_targetAgentId: string,
+		_message: AgentMessage,
 	): Promise<AgentMessageResult> {
 		return {
 			success: true,

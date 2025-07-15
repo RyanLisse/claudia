@@ -239,13 +239,10 @@ describe("Store and Query Integration", () => {
 				{ wrapper },
 			);
 
-			// Trigger optimistic mutation
-			act(() => {
-				result.current.mutate({ name: "Test Project" });
-			});
-
-			// Wait for the mutation to trigger onMutate
+			// Trigger optimistic mutation and wait
 			await act(async () => {
+				result.current.mutate({ name: "Test Project" });
+				// Wait for the mutation to trigger onMutate
 				await new Promise((resolve) => setTimeout(resolve, 10));
 			});
 
@@ -302,7 +299,7 @@ describe("Store and Query Integration", () => {
 			);
 
 			// Manually call the mutation and wait for it to complete
-			const mutationResult = result.current.mutate({ name: "Test Project" });
+			const _mutationResult = result.current.mutate({ name: "Test Project" });
 
 			// Wait for mutation to be processed
 			await act(async () => {
@@ -389,14 +386,11 @@ describe("Store and Query Integration", () => {
 				{ wrapper },
 			);
 
-			// Trigger both mutations simultaneously
-			act(() => {
+			// Trigger both mutations simultaneously and wait
+			await act(async () => {
 				mutation1.current.mutate({ name: "Project 1" });
 				mutation2.current.mutate({ name: "Project 2" });
-			});
-
-			// Wait for the mutations to trigger onMutate
-			await act(async () => {
+				// Wait for the mutations to trigger onMutate
 				await new Promise((resolve) => setTimeout(resolve, 10));
 			});
 

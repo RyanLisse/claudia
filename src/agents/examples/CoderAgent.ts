@@ -10,7 +10,7 @@ import type {
 } from '../types/agent.js';
 import {
   AgentCapability,
-  Priority
+  TaskStatus
 } from '../types/agent.js';
 
 export interface CoderAgentConfig extends AgentConfig {
@@ -140,10 +140,12 @@ export class CoderAgent extends BaseAgent {
 
       return {
         taskId: task.id,
-        success: true,
+        agentId: this.id,
+        status: TaskStatus.COMPLETED,
         result,
+        startedAt: task.createdAt,
         completedAt: new Date(),
-        executionTimeMs: Date.now() - task.createdAt.getTime(),
+        durationMs: Date.now() - task.createdAt.getTime(),
         metadata: {
           language: payload.language,
           framework: payload.framework,

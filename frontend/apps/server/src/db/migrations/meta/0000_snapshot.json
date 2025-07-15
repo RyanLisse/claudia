@@ -1,0 +1,1657 @@
+{
+	"id": "aad29216-90b8-4f5c-834f-72802c6d5675",
+	"prevId": "00000000-0000-0000-0000-000000000000",
+	"version": "7",
+	"dialect": "postgresql",
+	"tables": {
+		"public.agents": {
+			"name": "agents",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"name": {
+					"name": "name",
+					"type": "varchar(255)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"type": {
+					"name": "type",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"config": {
+					"name": "config",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"created_by": {
+					"name": "created_by",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"project_id": {
+					"name": "project_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"status": {
+					"name": "status",
+					"type": "varchar(50)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'inactive'"
+				},
+				"version": {
+					"name": "version",
+					"type": "varchar(20)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'1.0.0'"
+				},
+				"total_runs": {
+					"name": "total_runs",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"successful_runs": {
+					"name": "successful_runs",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"average_run_time": {
+					"name": "average_run_time",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"last_run_at": {
+					"name": "last_run_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"metrics": {
+					"name": "metrics",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'{\"tokensUsed\":0,\"avgResponseTime\":0,\"errorRate\":0,\"userRating\":0,\"memoryUsage\":0,\"cpuUsage\":0}'::jsonb"
+				},
+				"is_active": {
+					"name": "is_active",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": false,
+					"default": true
+				},
+				"is_public": {
+					"name": "is_public",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": false,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"electric_id": {
+					"name": "electric_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"sync_version": {
+					"name": "sync_version",
+					"type": "varchar(64)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'1'"
+				},
+				"last_sync_at": {
+					"name": "last_sync_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"agents_created_by_users_id_fk": {
+					"name": "agents_created_by_users_id_fk",
+					"tableFrom": "agents",
+					"tableTo": "users",
+					"columnsFrom": ["created_by"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				},
+				"agents_project_id_projects_id_fk": {
+					"name": "agents_project_id_projects_id_fk",
+					"tableFrom": "agents",
+					"tableTo": "projects",
+					"columnsFrom": ["project_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"agents_electric_id_unique": {
+					"name": "agents_electric_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["electric_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.memory": {
+			"name": "memory",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"key": {
+					"name": "key",
+					"type": "varchar(500)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"type": {
+					"name": "type",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"content": {
+					"name": "content",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"summary": {
+					"name": "summary",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"tags": {
+					"name": "tags",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'[]'::jsonb"
+				},
+				"user_id": {
+					"name": "user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"project_id": {
+					"name": "project_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"session_id": {
+					"name": "session_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"importance": {
+					"name": "importance",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 1
+				},
+				"frequency": {
+					"name": "frequency",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 1
+				},
+				"last_accessed_at": {
+					"name": "last_accessed_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "now()"
+				},
+				"expires_at": {
+					"name": "expires_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"version": {
+					"name": "version",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 1
+				},
+				"previous_version_id": {
+					"name": "previous_version_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"electric_id": {
+					"name": "electric_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"sync_version": {
+					"name": "sync_version",
+					"type": "varchar(64)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'1'"
+				},
+				"last_sync_at": {
+					"name": "last_sync_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {
+				"memory_key_idx": {
+					"name": "memory_key_idx",
+					"columns": [
+						{
+							"expression": "key",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"memory_type_idx": {
+					"name": "memory_type_idx",
+					"columns": [
+						{
+							"expression": "type",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"memory_user_idx": {
+					"name": "memory_user_idx",
+					"columns": [
+						{
+							"expression": "user_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"memory_project_idx": {
+					"name": "memory_project_idx",
+					"columns": [
+						{
+							"expression": "project_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"memory_session_idx": {
+					"name": "memory_session_idx",
+					"columns": [
+						{
+							"expression": "session_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"memory_importance_idx": {
+					"name": "memory_importance_idx",
+					"columns": [
+						{
+							"expression": "importance",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"memory_tags_idx": {
+					"name": "memory_tags_idx",
+					"columns": [
+						{
+							"expression": "tags",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "gin",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"memory_user_id_users_id_fk": {
+					"name": "memory_user_id_users_id_fk",
+					"tableFrom": "memory",
+					"tableTo": "users",
+					"columnsFrom": ["user_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				},
+				"memory_project_id_projects_id_fk": {
+					"name": "memory_project_id_projects_id_fk",
+					"tableFrom": "memory",
+					"tableTo": "projects",
+					"columnsFrom": ["project_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				},
+				"memory_session_id_sessions_id_fk": {
+					"name": "memory_session_id_sessions_id_fk",
+					"tableFrom": "memory",
+					"tableTo": "sessions",
+					"columnsFrom": ["session_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"memory_electric_id_unique": {
+					"name": "memory_electric_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["electric_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.messages": {
+			"name": "messages",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"session_id": {
+					"name": "session_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"role": {
+					"name": "role",
+					"type": "varchar(20)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"content": {
+					"name": "content",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"tokens": {
+					"name": "tokens",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"cost": {
+					"name": "cost",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"model": {
+					"name": "model",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"temperature": {
+					"name": "temperature",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"tool_calls": {
+					"name": "tool_calls",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"tool_results": {
+					"name": "tool_results",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"response_metadata": {
+					"name": "response_metadata",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"sequence_number": {
+					"name": "sequence_number",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"parent_message_id": {
+					"name": "parent_message_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"electric_id": {
+					"name": "electric_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"sync_version": {
+					"name": "sync_version",
+					"type": "varchar(64)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'1'"
+				},
+				"last_sync_at": {
+					"name": "last_sync_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {
+				"messages_session_idx": {
+					"name": "messages_session_idx",
+					"columns": [
+						{
+							"expression": "session_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"messages_sequence_idx": {
+					"name": "messages_sequence_idx",
+					"columns": [
+						{
+							"expression": "session_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "sequence_number",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"messages_role_idx": {
+					"name": "messages_role_idx",
+					"columns": [
+						{
+							"expression": "role",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"messages_created_at_idx": {
+					"name": "messages_created_at_idx",
+					"columns": [
+						{
+							"expression": "created_at",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {
+				"messages_session_id_sessions_id_fk": {
+					"name": "messages_session_id_sessions_id_fk",
+					"tableFrom": "messages",
+					"tableTo": "sessions",
+					"columnsFrom": ["session_id"],
+					"columnsTo": ["id"],
+					"onDelete": "cascade",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"messages_electric_id_unique": {
+					"name": "messages_electric_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["electric_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.projects": {
+			"name": "projects",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"name": {
+					"name": "name",
+					"type": "varchar(255)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"path": {
+					"name": "path",
+					"type": "varchar(1000)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"git_url": {
+					"name": "git_url",
+					"type": "varchar(500)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"git_branch": {
+					"name": "git_branch",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'main'"
+				},
+				"owner_id": {
+					"name": "owner_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"collaborators": {
+					"name": "collaborators",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'[]'::jsonb"
+				},
+				"settings": {
+					"name": "settings",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'{\"language\":\"javascript\",\"framework\":\"react\",\"buildCommand\":\"npm run build\",\"testCommand\":\"npm test\",\"lintCommand\":\"npm run lint\",\"environment\":{},\"dependencies\":[],\"devDependencies\":[]}'::jsonb"
+				},
+				"status": {
+					"name": "status",
+					"type": "varchar(50)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'active'"
+				},
+				"version": {
+					"name": "version",
+					"type": "varchar(20)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'1.0.0'"
+				},
+				"last_build_at": {
+					"name": "last_build_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"total_sessions": {
+					"name": "total_sessions",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"is_archived": {
+					"name": "is_archived",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": false,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"electric_id": {
+					"name": "electric_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"sync_version": {
+					"name": "sync_version",
+					"type": "varchar(64)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'1'"
+				},
+				"last_sync_at": {
+					"name": "last_sync_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"projects_owner_id_users_id_fk": {
+					"name": "projects_owner_id_users_id_fk",
+					"tableFrom": "projects",
+					"tableTo": "users",
+					"columnsFrom": ["owner_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"projects_electric_id_unique": {
+					"name": "projects_electric_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["electric_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.sessions": {
+			"name": "sessions",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"title": {
+					"name": "title",
+					"type": "varchar(255)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"description": {
+					"name": "description",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"user_id": {
+					"name": "user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"project_id": {
+					"name": "project_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"agent_id": {
+					"name": "agent_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"status": {
+					"name": "status",
+					"type": "varchar(50)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'active'"
+				},
+				"context": {
+					"name": "context",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'{\"workingDirectory\":\"\",\"environment\":{},\"files\":[],\"currentTask\":\"\",\"previousTasks\":[],\"goals\":[]}'::jsonb"
+				},
+				"total_messages": {
+					"name": "total_messages",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"total_tokens": {
+					"name": "total_tokens",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"total_cost": {
+					"name": "total_cost",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"duration": {
+					"name": "duration",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"metadata": {
+					"name": "metadata",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"started_at": {
+					"name": "started_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"ended_at": {
+					"name": "ended_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"last_activity_at": {
+					"name": "last_activity_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "now()"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"electric_id": {
+					"name": "electric_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"sync_version": {
+					"name": "sync_version",
+					"type": "varchar(64)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'1'"
+				},
+				"last_sync_at": {
+					"name": "last_sync_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {
+				"sessions_user_id_users_id_fk": {
+					"name": "sessions_user_id_users_id_fk",
+					"tableFrom": "sessions",
+					"tableTo": "users",
+					"columnsFrom": ["user_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				},
+				"sessions_project_id_projects_id_fk": {
+					"name": "sessions_project_id_projects_id_fk",
+					"tableFrom": "sessions",
+					"tableTo": "projects",
+					"columnsFrom": ["project_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				},
+				"sessions_agent_id_agents_id_fk": {
+					"name": "sessions_agent_id_agents_id_fk",
+					"tableFrom": "sessions",
+					"tableTo": "agents",
+					"columnsFrom": ["agent_id"],
+					"columnsTo": ["id"],
+					"onDelete": "no action",
+					"onUpdate": "no action"
+				}
+			},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"sessions_electric_id_unique": {
+					"name": "sessions_electric_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["electric_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.sync_conflicts": {
+			"name": "sync_conflicts",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"table_name": {
+					"name": "table_name",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"record_id": {
+					"name": "record_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"conflict_type": {
+					"name": "conflict_type",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"local_data": {
+					"name": "local_data",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"remote_data": {
+					"name": "remote_data",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"base_data": {
+					"name": "base_data",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"resolution_strategy": {
+					"name": "resolution_strategy",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"resolved_data": {
+					"name": "resolved_data",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"resolved_by": {
+					"name": "resolved_by",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"resolved_at": {
+					"name": "resolved_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"client_id": {
+					"name": "client_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"user_id": {
+					"name": "user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"is_resolved": {
+					"name": "is_resolved",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": false,
+					"default": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				}
+			},
+			"indexes": {
+				"sync_conflicts_table_record_idx": {
+					"name": "sync_conflicts_table_record_idx",
+					"columns": [
+						{
+							"expression": "table_name",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "record_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_conflicts_status_idx": {
+					"name": "sync_conflicts_status_idx",
+					"columns": [
+						{
+							"expression": "is_resolved",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_conflicts_client_idx": {
+					"name": "sync_conflicts_client_idx",
+					"columns": [
+						{
+							"expression": "client_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_conflicts_created_at_idx": {
+					"name": "sync_conflicts_created_at_idx",
+					"columns": [
+						{
+							"expression": "created_at",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.sync_events": {
+			"name": "sync_events",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"event_type": {
+					"name": "event_type",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"table_name": {
+					"name": "table_name",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"record_id": {
+					"name": "record_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"operation": {
+					"name": "operation",
+					"type": "varchar(50)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"old_data": {
+					"name": "old_data",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"new_data": {
+					"name": "new_data",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"conflict_data": {
+					"name": "conflict_data",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"sync_version": {
+					"name": "sync_version",
+					"type": "varchar(64)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"client_id": {
+					"name": "client_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"user_id": {
+					"name": "user_id",
+					"type": "uuid",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"status": {
+					"name": "status",
+					"type": "varchar(50)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'pending'"
+				},
+				"error_message": {
+					"name": "error_message",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"retry_count": {
+					"name": "retry_count",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": false,
+					"default": 0
+				},
+				"applied_at": {
+					"name": "applied_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"electric_id": {
+					"name": "electric_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"electric_lsn": {
+					"name": "electric_lsn",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {
+				"sync_events_event_type_idx": {
+					"name": "sync_events_event_type_idx",
+					"columns": [
+						{
+							"expression": "event_type",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_events_table_idx": {
+					"name": "sync_events_table_idx",
+					"columns": [
+						{
+							"expression": "table_name",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_events_record_idx": {
+					"name": "sync_events_record_idx",
+					"columns": [
+						{
+							"expression": "record_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_events_status_idx": {
+					"name": "sync_events_status_idx",
+					"columns": [
+						{
+							"expression": "status",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_events_client_idx": {
+					"name": "sync_events_client_idx",
+					"columns": [
+						{
+							"expression": "client_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_events_created_at_idx": {
+					"name": "sync_events_created_at_idx",
+					"columns": [
+						{
+							"expression": "created_at",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"sync_events_electric_id_unique": {
+					"name": "sync_events_electric_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["electric_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.sync_metrics": {
+			"name": "sync_metrics",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"client_id": {
+					"name": "client_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"metric_type": {
+					"name": "metric_type",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"value": {
+					"name": "value",
+					"type": "integer",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"unit": {
+					"name": "unit",
+					"type": "varchar(50)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"table_name": {
+					"name": "table_name",
+					"type": "varchar(100)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"operation": {
+					"name": "operation",
+					"type": "varchar(50)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"metadata": {
+					"name": "metadata",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"measured_at": {
+					"name": "measured_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"window_start": {
+					"name": "window_start",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"window_end": {
+					"name": "window_end",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {
+				"sync_metrics_client_metric_idx": {
+					"name": "sync_metrics_client_metric_idx",
+					"columns": [
+						{
+							"expression": "client_id",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						},
+						{
+							"expression": "metric_type",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_metrics_measured_at_idx": {
+					"name": "sync_metrics_measured_at_idx",
+					"columns": [
+						{
+							"expression": "measured_at",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				},
+				"sync_metrics_table_idx": {
+					"name": "sync_metrics_table_idx",
+					"columns": [
+						{
+							"expression": "table_name",
+							"isExpression": false,
+							"asc": true,
+							"nulls": "last"
+						}
+					],
+					"isUnique": false,
+					"concurrently": false,
+					"method": "btree",
+					"with": {}
+				}
+			},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		},
+		"public.users": {
+			"name": "users",
+			"schema": "",
+			"columns": {
+				"id": {
+					"name": "id",
+					"type": "uuid",
+					"primaryKey": true,
+					"notNull": true,
+					"default": "gen_random_uuid()"
+				},
+				"email": {
+					"name": "email",
+					"type": "varchar(255)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"name": {
+					"name": "name",
+					"type": "varchar(255)",
+					"primaryKey": false,
+					"notNull": true
+				},
+				"avatar_url": {
+					"name": "avatar_url",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"preferences": {
+					"name": "preferences",
+					"type": "jsonb",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'{\"theme\":\"system\",\"language\":\"en\",\"timezone\":\"UTC\",\"notifications\":{\"email\":true,\"push\":true,\"desktop\":true}}'::jsonb"
+				},
+				"is_active": {
+					"name": "is_active",
+					"type": "boolean",
+					"primaryKey": false,
+					"notNull": true,
+					"default": true
+				},
+				"last_active_at": {
+					"name": "last_active_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "now()"
+				},
+				"created_at": {
+					"name": "created_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"updated_at": {
+					"name": "updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": true,
+					"default": "now()"
+				},
+				"electric_id": {
+					"name": "electric_id",
+					"type": "varchar(128)",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"sync_version": {
+					"name": "sync_version",
+					"type": "varchar(64)",
+					"primaryKey": false,
+					"notNull": false,
+					"default": "'1'"
+				},
+				"last_sync_at": {
+					"name": "last_sync_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
+				}
+			},
+			"indexes": {},
+			"foreignKeys": {},
+			"compositePrimaryKeys": {},
+			"uniqueConstraints": {
+				"users_email_unique": {
+					"name": "users_email_unique",
+					"nullsNotDistinct": false,
+					"columns": ["email"]
+				},
+				"users_electric_id_unique": {
+					"name": "users_electric_id_unique",
+					"nullsNotDistinct": false,
+					"columns": ["electric_id"]
+				}
+			},
+			"policies": {},
+			"checkConstraints": {},
+			"isRLSEnabled": false
+		}
+	},
+	"enums": {},
+	"schemas": {},
+	"sequences": {},
+	"roles": {},
+	"policies": {},
+	"views": {},
+	"_meta": {
+		"columns": {},
+		"schemas": {},
+		"tables": {}
+	}
+}
