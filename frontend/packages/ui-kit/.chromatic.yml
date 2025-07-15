@@ -1,0 +1,40 @@
+# Chromatic configuration for visual regression testing
+# https://www.chromatic.com/docs/configuration
+
+# Project settings
+projectId: "YOUR_PROJECT_ID"
+
+# Build settings
+buildScriptName: "build-storybook"
+outputDir: "storybook-static"
+
+# Viewport configurations for responsive testing
+viewports:
+  - width: 375
+    height: 667
+    name: "Mobile"
+  - width: 768
+    height: 1024
+    name: "Tablet"
+  - width: 1440
+    height: 900
+    name: "Desktop"
+
+# Ignore patterns
+ignoreLastBuildOnBranch: "main"
+
+# Auto-accept changes on main branch
+autoAcceptChanges: "main"
+
+# Exit codes
+exitZeroOnChanges: true
+exitOnceUploaded: true
+
+# TurboSnap for faster builds
+onlyChanged: true
+
+# Accessibility testing
+accessibility: true
+
+# Interaction testing
+interactions: true

@@ -1,0 +1,27 @@
+name: "CodeQL Config"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-and-quality
+
+# Paths to ignore during analysis
+paths-ignore:
+  - "node_modules/**"
+  - "frontend/node_modules/**"
+  - "src-tauri/target/**"
+  - "**/*.test.ts"
+  - "**/*.test.js"
+  - "**/*.spec.ts"
+  - "**/*.spec.js"
+  - "**/dist/**"
+  - "**/build/**"
+  - "**/*.min.js"
+  - "**/*.bundle.js"
+
+# Paths to include (override paths-ignore for specific security-critical files)
+paths:
+  - "src-tauri/src/**"
+  - "src/**"
+  - "frontend/apps/*/src/**"
+  - "scripts/**"

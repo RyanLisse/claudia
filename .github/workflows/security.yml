@@ -1,0 +1,243 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  dependency-scan:
+    name: Dependency Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.18
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.bun/install/cache
+            frontend/node_modules
+            node_modules
+          key: ${{ runner.os }}-bun-security-${{ hashFiles('**/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-security-
+
+      - name: Install dependencies
+        run: |
+          bun install
+          cd frontend && bun install
+
+      - name: Run npm audit
+        run: |
+          cd frontend && bun audit --audit-level moderate
+        continue-on-error: true
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Run Rust security audit
+        run: cd src-tauri && cargo audit
+
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=medium
+
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript', 'typescript', 'rust' ]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Setup Bun (for JS/TS)
+        if: matrix.language == 'javascript' || matrix.language == 'typescript'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.18
+
+      - name: Setup Rust (for Rust)
+        if: matrix.language == 'rust'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies (Rust)
+        if: matrix.language == 'rust'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Build (JS/TS)
+        if: matrix.language == 'javascript' || matrix.language == 'typescript'
+        run: |
+          bun install
+          cd frontend && bun install && bun run build
+
+      - name: Build (Rust)
+        if: matrix.language == 'rust'
+        run: cd src-tauri && cargo build --release
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  semgrep-scan:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: auto
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
+          publishDeployment: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+
+  secrets-scan:
+    name: Secrets Detection
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+  docker-security:
+    name: Docker Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t claudia:latest .
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'claudia:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.18
+
+      - name: Install dependencies
+        run: |
+          bun install
+          cd frontend && bun install
+
+      - name: Check licenses
+        run: |
+          npx license-checker --onlyAllow 'MIT;BSD;ISC;Apache-2.0;LGPL-2.1;LGPL-3.0;MPL-2.0' --excludePrivatePackages
+        working-directory: frontend
+
+      - name: Install cargo-license
+        run: cargo install cargo-license
+
+      - name: Check Rust licenses
+        run: cd src-tauri && cargo license --tsv
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, codeql-analysis, semgrep-scan, secrets-scan, license-check]
+    if: always()
+    
+    steps:
+      - name: Security scan summary
+        run: |
+          echo "🔒 Security Scan Summary"
+          echo "========================"
+          echo "Dependency Scan: ${{ needs.dependency-scan.result }}"
+          echo "CodeQL Analysis: ${{ needs.codeql-analysis.result }}"
+          echo "Semgrep Scan: ${{ needs.semgrep-scan.result }}"
+          echo "Secrets Detection: ${{ needs.secrets-scan.result }}"
+          echo "License Check: ${{ needs.license-check.result }}"
+
+      - name: Fail if critical security issues
+        if: |
+          needs.dependency-scan.result == 'failure' ||
+          needs.codeql-analysis.result == 'failure' ||
+          needs.secrets-scan.result == 'failure'
+        run: |
+          echo "❌ Critical security issues detected!"
+          exit 1
+
+      - name: Success message
+        if: |
+          needs.dependency-scan.result == 'success' &&
+          needs.codeql-analysis.result == 'success' &&
+          needs.secrets-scan.result == 'success' &&
+          needs.license-check.result == 'success'
+        run: echo "✅ All security scans passed!"

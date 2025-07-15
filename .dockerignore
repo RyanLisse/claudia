@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+src-tauri/target/
+
+# Development files
+.git/
+.github/
+*.log
+*.tmp
+.env*
+.DS_Store
+
+# Test files
+coverage/
+**/*.test.*
+**/*.spec.*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Cache directories
+.cache/
+.turbo/
+.bun/
+
+# Documentation
+README.md
+docs/
+*.md
+
+# CI/CD
+.github/
+.gitignore
+
+# Local development
+.local/
+temp/
+logs/
+
+# Package manager files
+package-lock.json
+yarn.lock
+bun.lock
+
+# OS generated files
+Thumbs.db
+.DS_Store

@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "claudia.asterisk.so",
   "build": {
-    "beforeDevCommand": "bun run dev",
-    "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "bun run build",
-    "frontendDist": "../dist"
+    "beforeDevCommand": "cd frontend && bun run dev:web",
+    "devUrl": "http://localhost:3001",
+    "beforeBuildCommand": "cd frontend && bun run build",
+    "frontendDist": "../frontend/apps/web/out"
   },
   "app": {
     "windows": [
