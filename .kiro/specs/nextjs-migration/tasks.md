@@ -11,19 +11,19 @@
   - _Requirements: 1.1, 1.3, 1.5, 5.1, 5.2_
 
 - [x] 2. Update Tauri configuration for Next.js integration
-  - Modify src-tauri/tauri.conf.json to use http://localhost:3000 for devUrl
-  - Set frontendDist to "../out" for production builds
-  - Update beforeDevCommand to "next dev" and beforeBuildCommand to "next build"
+  - Modify src-tauri/tauri.conf.json to use http://localhost:3001 for devUrl
+  - Set frontendDist to "../frontend/apps/web/out" for production builds
+  - Update beforeDevCommand to "cd frontend && bun run dev:web" and beforeBuildCommand to "cd frontend && bun run build"
   - _Requirements: 1.2, 1.3, 3.1, 3.2_
 
-- [-] 3. Create Next.js App Router structure
+- [x] 3. Create Next.js App Router structure
   - Create app/layout.tsx with root HTML structure and global providers
   - Create app/page.tsx for the welcome screen
   - Create app/globals.css and migrate existing styles
   - Set up basic routing structure for projects and agents pages
   - _Requirements: 2.2, 2.4, 5.4_
 
-- [ ] 4. Update package.json scripts and build process
+- [x] 4. Update package.json scripts and build process
   - Update dev script to run "next dev"
   - Update build script to run "next build"
   - Ensure tauri dev and tauri build commands work with new setup
@@ -32,32 +32,39 @@
 
 ## Slice 2: Component Migration and UI Parity
 
-- [ ] 5. Migrate core layout components to Next.js
-  - Move Topbar component to app/layout.tsx
-  - Update import paths from relative to absolute where needed
+- [ ] 5. Migrate Topbar component and global providers to Next.js layout
+  - Copy Topbar component from src/components/Topbar.tsx to frontend/apps/web/src/components/
+  - Update app/layout.tsx to include Topbar and global providers (OutputCacheProvider, etc.)
+  - Update import paths to work with Next.js structure
   - Replace Vite environment variables with Next.js equivalents
-  - Ensure global state providers work in App Router layout
   - _Requirements: 2.1, 2.2, 5.3_
 
-- [ ] 6. Create welcome screen page component
-  - Implement app/page.tsx with ~/.claude detection logic
-  - Create navigation cards for "CC Projects" and "CC Agents"
-  - Ensure styling matches existing welcome screen appearance
-  - Test that navigation state management works correctly
-  - _Requirements: 2.2, 2.4_
-
-- [ ] 7. Migrate existing React components
-  - Update all component imports to work with Next.js structure
-  - Fix any Vite-specific code (import.meta.env, asset imports)
+- [ ] 6. Migrate core UI components from Vite app
+  - Copy essential components from src/components/ to frontend/apps/web/src/components/
+  - Focus on: ProjectList, SessionList, RunningClaudeSessions, Settings, CCAgents, ClaudeCodeSession
+  - Update import paths and fix any Vite-specific code (import.meta.env, asset imports)
   - Ensure shadcn/ui components render correctly in Next.js
-  - Verify all TypeScript types are compatible
   - _Requirements: 2.1, 2.3_
 
-- [ ] 8. Implement client-side routing for main sections
-  - Create app/projects/page.tsx for CC Projects section
-  - Create app/agents/page.tsx for CC Agents section
-  - Implement navigation between sections using Next.js routing
-  - Ensure routing works in both development and production builds
+- [ ] 7. Migrate API and utility libraries
+  - Copy src/lib/api.ts to frontend/apps/web/src/lib/ and update for Next.js
+  - Copy other essential utilities from src/lib/ (outputCache, utils, etc.)
+  - Update src/types/ and ensure TypeScript types are compatible
+  - Replace Vite-specific asset handling with Next.js conventions
+  - _Requirements: 2.1, 2.3_
+
+- [ ] 8. Implement functional CC Projects page
+  - Update app/projects/page.tsx to include full project management functionality
+  - Integrate ProjectList, SessionList, and RunningClaudeSessions components
+  - Implement project selection, session browsing, and new session creation
+  - Ensure all existing project management features work correctly
+  - _Requirements: 2.2, 5.4_
+
+- [ ] 9. Implement functional CC Agents page
+  - Update app/agents/page.tsx to include full agent management functionality
+  - Integrate CCAgents component and related agent management features
+  - Ensure agent creation, editing, and execution features work correctly
+  - Test agent workflow integration with Next.js routing
   - _Requirements: 2.2, 5.4_
 
 ## Slice 3: Asset Handling and Static Export Optimization

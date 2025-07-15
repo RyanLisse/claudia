@@ -3,20 +3,85 @@
  */
 
 import { z } from 'zod';
-import { router, publicProcedure } from '../lib/trpc.js';
+import { router, publicProcedure } from '../lib/trpc';
+// Import from agent system - using direct imports to avoid export issues
+import { AgentOrchestrator } from '../../../../../src/agents/core/AgentOrchestrator';
+import { AgentRegistry } from '../../../../../src/agents/core/AgentRegistry';  
+import { AgentMonitor } from '../../../../../src/agents/monitoring/AgentMonitor';
+import { MessageBroker } from '../../../../../src/agents/communication/MessageBroker';
+import { TaskQueue } from '../../../../../src/agents/core/TaskQueue';
+import { CodeAnalysisAgent } from '../../../../../src/agents/examples/CodeAnalysisAgent';
 import { 
-  orchestrator,
-  agentRegistry,
-  agentMonitor,
-  messageBroker,
-  submitCodeAnalysisTask,
-  getSystemHealth,
-  createCodeAnalysisAgent,
   AgentCapability,
   Priority,
   TaskStatus,
   AgentStatus
-} from '../../../../src/agents/utils/index.js';
+} from '../../../../../src/agents/types/agent';
+
+// Initialize system components locally
+const agentRegistry = new AgentRegistry();
+const taskQueue = new TaskQueue(1000);
+const agentMonitor = new AgentMonitor();
+const messageBroker = new MessageBroker();
+const orchestrator = new AgentOrchestrator(
+  agentRegistry,
+  taskQueue,
+  agentMonitor,
+  messageBroker
+);
+
+// Helper functions
+async function getSystemHealth() {
+  const registryStats = agentRegistry.getStats();
+  const queueStats = taskQueue.getStats();
+  const monitorHealth = agentMonitor.getSystemHealth();
+  
+  return {
+    agentHealth: {
+      totalAgents: registryStats.totalAgents,
+      activeAgents: registryStats.activeAgents,
+      idleAgents: registryStats.idleAgents,
+      busyAgents: registryStats.busyAgents,
+      errorAgents: registryStats.errorAgents,
+    },
+    taskHealth: {
+      queueSize: queueStats.queueSize,
+      processingTasks: queueStats.processingTasks,
+      completedTasks: queueStats.completedTasks,
+      failedTasks: queueStats.failedTasks,
+    },
+    monitorHealth,
+    timestamp: new Date().toISOString(),
+  };
+}
+
+function createCodeAnalysisAgent(): CodeAnalysisAgent {
+  return new CodeAnalysisAgent(`agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+}
+
+async function submitCodeAnalysisTask(
+  codeContent: string,
+  language: string,
+  analysisTypes: string[] = ['complexity']
+): Promise<string> {
+  const task = {
+    id: `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    type: 'code_analysis',
+    priority: 1,
+    payload: {
+      codeContent,
+      language,
+      analysisTypes,
+    },
+    requiredCapabilities: ['CODE_ANALYSIS'],
+    maxRetries: 3,
+    timeoutMs: 120000,
+    createdAt: new Date(),
+    status: 'pending' as const,
+  };
+
+  return orchestrator.submitTask(task);
+}
 
 // Input validation schemas
 const createAgentSchema = z.object({

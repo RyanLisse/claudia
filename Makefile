@@ -20,7 +20,7 @@ install:
 
 lint:
 	@echo "🔍 Running linting checks..."
-	@if command -v cargo >/dev/null 2>&1; then cargo clippy -- -D warnings || echo "Rust linting completed"; fi
+	@if [ -f "src-tauri/Cargo.toml" ]; then cd src-tauri && cargo clippy -- -D warnings || echo "Tauri linting completed"; fi
 	@if [ -d "frontend" ]; then cd frontend && npm run lint || echo "Frontend linting completed"; fi
 	@if [ -d "api" ]; then cd api && bun run lint || echo "API linting completed"; fi
 	@echo "✅ Linting passed"
@@ -33,14 +33,14 @@ typecheck:
 
 test-unit:
 	@echo "🧪 Running unit tests..."
-	@if command -v cargo >/dev/null 2>&1; then cargo test --lib || echo "Rust tests completed"; fi
+	@if [ -f "src-tauri/Cargo.toml" ]; then cd src-tauri && cargo test --lib || echo "Tauri tests completed"; fi
 	@if [ -d "frontend" ]; then cd frontend && npm run test:unit || echo "Frontend tests completed"; fi
 	@if [ -d "api" ]; then cd api && bun test || echo "API tests completed"; fi
 	@echo "✅ Unit tests passed"
 
 test-integration:
 	@echo "🔗 Running integration tests..."
-	@if command -v cargo >/dev/null 2>&1; then cargo test --test integration || echo "Rust integration tests completed"; fi
+	@if [ -f "src-tauri/Cargo.toml" ]; then cd src-tauri && cargo test --test integration || echo "Tauri integration tests completed"; fi
 	@if [ -d "frontend" ]; then cd frontend && npm run test:integration || echo "Frontend integration tests completed"; fi
 	@echo "✅ Integration tests passed"
 
@@ -51,7 +51,7 @@ test-e2e:
 
 build:
 	@echo "🏗️ Building all components..."
-	@if command -v cargo >/dev/null 2>&1; then cargo build --release || echo "Rust build completed"; fi
+	@if [ -f "src-tauri/Cargo.toml" ]; then cd src-tauri && cargo build --release || echo "Tauri build completed"; fi
 	@if [ -d "frontend" ]; then cd frontend && npm run build || echo "Frontend build completed"; fi
 	@if [ -d "api" ]; then cd api && bun run build || echo "API build completed"; fi
 	@echo "✅ Build complete"
