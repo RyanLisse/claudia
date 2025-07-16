@@ -1,10 +1,28 @@
 import "@testing-library/jest-dom";
 import { cleanup } from "@testing-library/react";
 import React from "react";
-import { afterEach, vi } from "vitest";
+import { afterEach, vi, beforeAll } from "vitest";
 
 // Make React available globally for JSX
 global.React = React;
+
+// Ensure DOM environment is properly set up
+beforeAll(() => {
+  // Ensure document and window are available
+  if (typeof document === 'undefined') {
+    throw new Error('DOM environment not available. Check vitest config environment setting.');
+  }
+
+  // Set up basic DOM structure
+  if (!document.body) {
+    document.documentElement.appendChild(document.createElement('body'));
+  }
+
+  // Ensure proper DOM APIs are available
+  if (!document.createElement) {
+    throw new Error('document.createElement not available');
+  }
+});
 
 // Comprehensive DOM cleanup after each test
 afterEach(() => {

@@ -11,10 +11,16 @@ export interface Env {
   // API Keys
   API_KEY?: string
   CLAUDE_API_KEY?: string
+  OPENAI_API_KEY?: string
+
+  // Inngest
+  INNGEST_EVENT_KEY?: string
+  INNGEST_SIGNING_KEY?: string
   
   // Environment
   NODE_ENV?: string
   PORT?: string
+  WS_PORT?: string
   
   // Rate limiting
   REDIS_URL?: string

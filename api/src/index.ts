@@ -6,7 +6,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { timing } from 'hono/timing'
 // Rate limiter - built-in middleware
 import { requestId } from 'hono/request-id'
-import { compress } from 'hono/compress'
+// import { compress } from 'hono/compress' // Disabled due to CompressionStream issues
 
 // Import routes
 import { authRoutes } from './routes/auth.js'
@@ -14,17 +14,47 @@ import { userRoutes } from './routes/users.js'
 import { healthRoutes } from './routes/health.js'
 import { projectRoutes } from './routes/projects.js'
 import { agentRoutes } from './routes/agents.js'
+import { tasksEnhanced } from './routes/tasks-enhanced.js'
 
 // Import middleware
 import { errorHandler } from './middleware/error.js'
 import { authMiddleware } from './middleware/auth.js'
 import { validationMiddleware } from './middleware/validation.js'
+import {
+  environmentSecurity,
+  securityPresets,
+  securityAudit,
+  threatDetection,
+  securityMiddleware
+} from './middleware/security.js'
+import { apiSanitization } from './middleware/input-sanitization.js'
+
+// Import WebSocket manager
+import { createWebSocketManager } from './websocket/WebSocketManager.js'
 
 // Import types
 import type { Env } from './types/env.js'
 import type { Variables } from './types/variables.js'
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>()
+
+// ============================================================================
+// SECURITY MIDDLEWARE SETUP (First line of defense)
+// ============================================================================
+
+// 1. Security Audit and Threat Detection (First line of defense)
+app.use('*', securityAudit)
+app.use('*', threatDetection)
+
+// 2. Environment-based security configuration
+app.use('*', environmentSecurity())
+
+// 3. Input sanitization for all requests
+app.use('*', apiSanitization)
+
+// ============================================================================
+// STANDARD MIDDLEWARE
+// ============================================================================
 
 // Global middleware
 app.use('*', cors({
@@ -35,7 +65,7 @@ app.use('*', cors({
 }))
 
 app.use('*', secureHeaders())
-app.use('*', compress())
+// app.use('*', compress()) // Disabled due to CompressionStream issues
 app.use('*', timing())
 app.use('*', logger())
 app.use('*', prettyJSON())
@@ -45,26 +75,32 @@ app.use('*', requestId())
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
 
 app.use('*', async (c, next) => {
+  // Skip rate limiting in test environment
+  if (process.env.NODE_ENV === 'test' || process.env.DISABLE_RATE_LIMITING === 'true') {
+    await next()
+    return
+  }
+
   const ip = c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? 'anonymous'
   const now = Date.now()
   const windowMs = 15 * 60 * 1000 // 15 minutes
   const limit = c.req.path.startsWith('/api/auth') ? 10 : 1000
-  
+
   const key = `${ip}:${c.req.path.startsWith('/api/auth') ? 'auth' : 'general'}`
   let record = rateLimitStore.get(key)
-  
+
   if (!record || now > record.resetTime) {
     record = { count: 0, resetTime: now + windowMs }
   }
-  
+
   record.count++
   rateLimitStore.set(key, record)
-  
+
   // Set rate limit headers
   c.res.headers.set('X-RateLimit-Limit', limit.toString())
   c.res.headers.set('X-RateLimit-Remaining', Math.max(0, limit - record.count).toString())
   c.res.headers.set('X-RateLimit-Reset', new Date(record.resetTime).toISOString())
-  
+
   if (record.count > limit) {
     return c.json({
       success: false,
@@ -77,12 +113,33 @@ app.use('*', async (c, next) => {
   await next()
 })
 
-// API routes
+// ============================================================================
+// PROTECTED API ROUTES
+// ============================================================================
+
+// Public routes (health check)
 app.route('/api/health', healthRoutes)
+
+// Authentication routes (with auth-specific security)
+app.use('/api/auth/*', securityMiddleware.authProtected)
 app.route('/api/auth', authRoutes)
+
+// Protected API routes (require authentication + API security)
+app.use('/api/users/*', authMiddleware)
+app.use('/api/users/*', securityMiddleware.apiProtected)
 app.route('/api/users', userRoutes)
+
+app.use('/api/projects/*', authMiddleware)
+app.use('/api/projects/*', securityMiddleware.apiProtected)
 app.route('/api/projects', projectRoutes)
+
+app.use('/api/agents/*', authMiddleware)
+app.use('/api/agents/*', securityMiddleware.apiProtected)
 app.route('/api/agents', agentRoutes)
+
+app.use('/api/tasks/*', authMiddleware)
+app.use('/api/tasks/*', securityMiddleware.apiProtected)
+app.route('/api/tasks', tasksEnhanced)
 
 // Root endpoint
 app.get('/', (c) => {
@@ -98,7 +155,9 @@ app.get('/', (c) => {
       users: '/api/users',
       projects: '/api/projects',
       agents: '/api/agents',
-      docs: '/docs'
+      tasks: '/api/tasks',
+      docs: '/docs',
+      websocket: '/ws'
     }
   })
 })
@@ -179,8 +238,13 @@ app.notFound((c) => {
 })
 
 const port = process.env.PORT || 3001
+const wsPort = parseInt(process.env.WS_PORT || '3002')
 
 console.log(`🚀 Claudia API server starting on port ${port}`)
+console.log(`🔌 WebSocket server starting on port ${wsPort}`)
+
+// Initialize WebSocket server
+const wsManager = createWebSocketManager(wsPort)
 
 export default {
   port,
