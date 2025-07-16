@@ -20,7 +20,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
+      '@': path.resolve(__dirname, './src'),
+      '@claudia/ui-kit': path.resolve(__dirname, '../ui-kit/src')
     }
+  },
+  define: {
+    global: 'globalThis'
   }
 });

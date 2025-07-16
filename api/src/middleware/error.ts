@@ -3,14 +3,28 @@ import type { ApiResponse } from '../types/variables.js'
 
 export const errorHandler: ErrorHandler = (err, c) => {
   console.error('API Error:', err)
-  
+
   const requestId = c.get('requestId') || 'unknown'
-  
+
+  // Handle HTTPException instances first (from Hono)
+  if (err.name === 'HTTPException' || (err as any).status) {
+    const httpErr = err as any
+    const response: ApiResponse = {
+      success: false,
+      error: httpErr.message || 'HTTP Error',
+      message: httpErr.message || 'An HTTP error occurred',
+      timestamp: new Date().toISOString(),
+      requestId,
+      data: undefined
+    }
+    return c.json(response, httpErr.status || 500)
+  }
+
   // Handle Zod validation errors
   if (err.name === 'ZodError') {
     const response: ApiResponse = {
       success: false,
-      error: 'Validation Error',
+      error: err,
       message: 'Invalid request data',
       timestamp: new Date().toISOString(),
       requestId,
@@ -26,7 +40,8 @@ export const errorHandler: ErrorHandler = (err, c) => {
       error: 'Unauthorized',
       message: 'Authentication required or invalid credentials',
       timestamp: new Date().toISOString(),
-      requestId
+      requestId,
+      data: undefined
     }
     return c.json(response, 401)
   }
@@ -38,7 +53,8 @@ export const errorHandler: ErrorHandler = (err, c) => {
       error: 'Forbidden',
       message: 'Insufficient permissions to access this resource',
       timestamp: new Date().toISOString(),
-      requestId
+      requestId,
+      data: undefined
     }
     return c.json(response, 403)
   }
@@ -50,7 +66,8 @@ export const errorHandler: ErrorHandler = (err, c) => {
       error: 'Not Found',
       message: 'The requested resource was not found',
       timestamp: new Date().toISOString(),
-      requestId
+      requestId,
+      data: undefined
     }
     return c.json(response, 404)
   }
@@ -62,7 +79,8 @@ export const errorHandler: ErrorHandler = (err, c) => {
       error: 'Rate Limit Exceeded',
       message: 'Too many requests. Please try again later.',
       timestamp: new Date().toISOString(),
-      requestId
+      requestId,
+      data: undefined
     }
     return c.json(response, 429)
   }
@@ -74,7 +92,8 @@ export const errorHandler: ErrorHandler = (err, c) => {
       error: 'Database Error',
       message: 'Internal database error occurred',
       timestamp: new Date().toISOString(),
-      requestId
+      requestId,
+      data: undefined
     }
     return c.json(response, 500)
   }
@@ -83,11 +102,12 @@ export const errorHandler: ErrorHandler = (err, c) => {
   const response: ApiResponse = {
     success: false,
     error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' 
-      ? err.message 
+    message: process.env.NODE_ENV === 'development'
+      ? err.message
       : 'An unexpected error occurred',
     timestamp: new Date().toISOString(),
-    requestId
+    requestId,
+    data: undefined
   }
   
   return c.json(response, 500)
