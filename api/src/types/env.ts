@@ -24,4 +24,11 @@ export interface Env {
   
   // Logging
   LOG_LEVEL?: string
+
+  // ElectricSQL
+  ELECTRIC_API_URL?: string
+  ELECTRIC_DB_URL?: string
+  ELECTRIC_SOURCE_ID?: string
+  ELECTRIC_SOURCE_SECRET?: string
+  ELECTRIC_APP_NAME?: string
 }
