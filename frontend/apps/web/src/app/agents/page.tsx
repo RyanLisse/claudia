@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Play, Bot } from "lucide-react";
 import { AgentDashboard } from "@/components/agent-dashboard";
 import type { AgentMetrics, SwarmMetrics } from "@/types/agent-dashboard";
 import { Button } from "@/components/ui/button";
 import { api, type Agent } from "@/lib/api-web";
+import AgentFormDialog from "@/components/AgentFormDialog";
+import AgentExecuteDialog from "@/components/AgentExecuteDialog";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
 // Utility helpers -----------------------------------------------------------
 
@@ -80,25 +83,73 @@ export default function AgentsPage() {
   const [swarmMetrics, setSwarmMetrics] = useState<SwarmMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [agentRuns, setAgentRuns] = useState<import("@/lib/api-web").AgentRunWithMetrics[]>([]);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editAgent, setEditAgent] = useState<Agent | null>(null);
+  const [execOpen, setExecOpen] = useState(false);
+  const [execAgent, setExecAgent] = useState<Agent | null>(null);
+  const originalAgentsRef = useState<Agent[]>([])[0]; // placeholder but we'll keep
+  const updateOriginalAgents = (arr: Agent[]) => {
+    originalAgentsRef.splice(0, originalAgentsRef.length, ...arr);
+  };
+
+  const findOriginalAgent = (idOrName: string): Agent | null => {
+    return originalAgentsRef.find(a => a.id?.toString() === idOrName || a.name === idOrName) || null;
+  };
+
+  const loadAll = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [rawAgents, runs] = await Promise.all([
+        api.listAgents(),
+        api.listAgentRuns(),
+      ]);
+      updateOriginalAgents(rawAgents);
+      setAgentRuns(runs);
+      const metrics = rawAgents.map((a) => mapAgentToMetrics(a)); // we'll refine below
+      // compute metrics based on runs
+      runs.forEach((run) => {
+        const m = metrics.find((mx) => mx.id === (run.agent_id?.toString() || run.agent_name));
+        if (m) {
+          m.performance.tasksCompleted += 1;
+        }
+      });
+      setAgents(metrics);
+      setSwarmMetrics(computeSwarmMetrics(metrics));
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Failed to load agents"));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadAgents = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const rawAgents = await api.listAgents();
-        const metrics = rawAgents.map(mapAgentToMetrics);
-        setAgents(metrics);
-        setSwarmMetrics(computeSwarmMetrics(metrics));
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error("Failed to load agents"));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadAgents();
+    loadAll();
   }, []);
+
+  const openCreate = () => {
+    setEditAgent(null);
+    setFormOpen(true);
+  };
+  const openEdit = (agent: Agent) => {
+    setEditAgent(agent);
+    setFormOpen(true);
+  };
+  const openExec = (agent: Agent) => {
+    setExecAgent(agent);
+    setExecOpen(true);
+  };
+  const handleDelete = async (agent: Agent) => {
+    if (!agent.id) return;
+    if (!confirm(`Delete agent \"${agent.name}\"?`)) return;
+    try {
+      await api.deleteAgent(agent.id);
+      await loadAll();
+    } catch (err) {
+      alert("Failed to delete agent");
+    }
+  };
 
   const handleAgentAction = (agentId: string, action: "start" | "pause" | "stop" | "configure") => {
     // Placeholder implementation – integrate real API once available
@@ -164,16 +215,58 @@ export default function AgentsPage() {
             agents={agents}
             swarmMetrics={swarmMetrics}
             onAgentAction={handleAgentAction}
+            className="mb-10"
           />
         )}
 
-        {/* Empty state */}
-        {!loading && agents.length === 0 && !error && (
-          <div className="py-12 text-center">
-            <p className="text-muted-foreground text-sm mb-4">No agents found.</p>
-            <Button onClick={() => alert("Agent creation coming soon!")}>Create your first agent</Button>
+        {/* Agents Management Grid */}
+        {!loading && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold text-xl">Manage Agents</h2>
+              <Button onClick={openCreate} size="sm"><Plus className="mr-1 h-4 w-4"/>New Agent</Button>
+            </div>
+            {agents.length === 0 ? (
+              <div className="text-center py-12">
+                <Bot className="mx-auto mb-4 h-12 w-12 text-muted-foreground"/>
+                <p className="text-muted-foreground mb-4">No agents yet.</p>
+                <Button onClick={openCreate}>Create your first agent</Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {agents.map((agm) => (
+                  <Card key={agm.id} className="transition-shadow hover:shadow-lg">
+                    <CardContent className="p-4 text-center">
+                      <h3 className="font-medium text-lg mb-1">{agm.name}</h3>
+                      <p className="text-xs text-muted-foreground mb-2 capitalize">{agm.type}</p>
+                      <p className="text-xs text-muted-foreground">Tasks: {agm.performance.tasksCompleted}</p>
+                    </CardContent>
+                    <CardFooter className="flex justify-center gap-1 p-2">
+                      <Button size="sm" variant="ghost" onClick={() => openExec(findOriginalAgent(agm.id))}><Play className="h-3 w-3"/></Button>
+                      <Button size="sm" variant="ghost" onClick={() => openEdit(findOriginalAgent(agm.id))}><Edit className="h-3 w-3"/></Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleDelete(findOriginalAgent(agm.id))}><Trash2 className="h-3 w-3 text-destructive"/></Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
+
+        {/* Dialogs */}
+        <AgentFormDialog
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          onSaved={loadAll}
+          agent={editAgent}
+        />
+        <AgentExecuteDialog
+          open={execOpen}
+          onClose={() => setExecOpen(false)}
+          onExecuted={loadAll}
+          agent={execAgent}
+        />
+
       </div>
     </div>
   );
