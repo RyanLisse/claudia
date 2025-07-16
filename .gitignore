@@ -29,7 +29,6 @@ src-tauri/binaries/
 temp_lib/
 
 .cursor/
-AGENTS.md
 CLAUDE.md
 *_TASK.md
 
@@ -61,3 +60,15 @@ claude-flow
 claude-flow.bat
 claude-flow.ps1
 hive-mind-prompt-*.txt
+
+# Agent-specific files
+.env
+agents/
+agent-logs/
+agent-cache/
+*.agent.log
+*.agent.cache
+agent-config.json
+remote-agent-session-*
+agent-workspace/
+temp-agent-files/
